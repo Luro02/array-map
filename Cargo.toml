@@ -1,0 +1,24 @@
+[package]
+name = "array-map"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# TODO: re-export ahash features
+[dependencies]
+ahash = { version="0.7", default-features=false, features=[] }
+
+[dev-dependencies]
+pretty_assertions = "0.6"
+criterion = "0.3"
+iai = "0.1"
+
+[features]
+std = []
+alloc = []
+panic = []
+
+[[bench]]
+name = "bench"
+harness = false
