@@ -17,3 +17,9 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
         self.0.next().map(|(k, v)| (k, v))
     }
 }
+
+impl<'a, K, V> Clone for Iter<'a, K, V> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
