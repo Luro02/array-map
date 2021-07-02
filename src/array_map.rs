@@ -338,9 +338,10 @@ where
     ///
     /// let mut map: ArrayMap<i32, &str, 3> = ArrayMap::new();
     ///
-    /// map.insert(1, "a");
+    /// map.insert(1, "a")?;
     /// assert_eq!(map.contains_key(&1), true);
     /// assert_eq!(map.contains_key(&2), false);
+    /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     pub fn contains_key<Q: ?Sized>(&self, qkey: &Q) -> bool
     where
@@ -348,6 +349,37 @@ where
         Q: Hash + Eq,
     {
         self.get(qkey).is_some()
+    }
+
+    /// Returns the key-value pair corresponding to the supplied key.
+    ///
+    /// The supplied key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// [`Eq`]: core::cmp::Eq
+    /// [`Hash`]: core::hash::Hash
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<i32, &str, 13> = ArrayMap::new();
+    /// map.insert(1, "a")?;
+    ///
+    /// assert_eq!(map.get_key_value(&1), Some((&1, &"a")));
+    /// assert_eq!(map.get_key_value(&2), None);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn get_key_value<Q: ?Sized>(&self, key: &Q) -> Option<(&K, &V)>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let index = self.find(key).occupied()?;
+
+        self.entries[index].as_ref().map(|(k, v)| (k, v))
     }
 }
 
