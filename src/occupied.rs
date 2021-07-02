@@ -21,9 +21,10 @@ impl<'a, K, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
         hasher: &'a H,
         len: &'a mut usize,
     ) -> Self {
-        assert!(index < N);
-        assert!(entries[index].is_some());
-        assert!(*len > 0);
+        debug_assert_eq!(entries.len(), N);
+        debug_assert!(index < N);
+        debug_assert!(entries[index].is_some());
+        debug_assert!(*len > 0);
 
         Self {
             entries,
@@ -35,11 +36,7 @@ impl<'a, K, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
 
     #[must_use]
     fn entry(&self) -> (&K, &V) {
-        let (key, value) = &self
-            .entries
-            .get(self.index)
-            .and_then(Option::as_ref)
-            .unwrap();
+        let (key, value) = &self.entries[self.index].as_ref().unwrap();
 
         (key, value)
     }
@@ -56,12 +53,7 @@ impl<'a, K, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
 
     #[must_use]
     pub fn get_mut(&mut self) -> &mut V {
-        &mut self
-            .entries
-            .get_mut(self.index)
-            .and_then(Option::as_mut)
-            .unwrap()
-            .1
+        &mut self.entries[self.index].as_mut().unwrap().1
     }
 
     pub fn insert(&mut self, mut value: V) -> V {
@@ -72,12 +64,7 @@ impl<'a, K, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
 
     #[must_use]
     pub fn into_mut(self) -> &'a mut V {
-        &mut self
-            .entries
-            .get_mut(self.index)
-            .and_then(Option::as_mut)
-            .unwrap()
-            .1
+        &mut self.entries[self.index].as_mut().unwrap().1
     }
 }
 
