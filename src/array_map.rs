@@ -263,9 +263,7 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let index = self.find(key).occupied()?;
-
-        self.entries[index].as_ref().map(|(_, v)| v)
+        self.get_key_value(key).map(|(_, v)| v)
     }
 
     /// Returns a mutable reference to the value corresponding to the key.
