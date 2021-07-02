@@ -321,6 +321,34 @@ where
         self.entries = [(); N].map(|_| None);
         self.len = 0;
     }
+
+    /// Returns `true` if the map contains a value for the specified key.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// [`Eq`]: core::cmp::Eq
+    /// [`Hash`]: core::hash::Hash
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<i32, &str, 3> = ArrayMap::new();
+    ///
+    /// map.insert(1, "a");
+    /// assert_eq!(map.contains_key(&1), true);
+    /// assert_eq!(map.contains_key(&2), false);
+    /// ```
+    pub fn contains_key<Q: ?Sized>(&self, qkey: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.get(qkey).is_some()
+    }
 }
 
 impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
