@@ -379,6 +379,44 @@ where
 
         self.entries[index].as_ref().map(|(k, v)| (k, v))
     }
+
+    /// Returns the key-value pair corresponding to the supplied key.
+    ///
+    /// The supplied key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// [`Eq`]: core::cmp::Eq
+    /// [`Hash`]: core::hash::Hash
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<i32, &str, 13> = ArrayMap::new();
+    /// map.insert(1, "a")?;
+    ///
+    /// let (k, v) = map.get_key_value_mut(&1).unwrap();
+    /// assert_eq!(k, &1);
+    /// assert_eq!(v, &mut "a");
+    /// *v = "b";
+    /// assert_eq!(map.get_key_value_mut(&1), Some((&1, &mut "b")));
+    /// assert_eq!(map.get_key_value_mut(&2), None);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn get_key_value_mut<Q: ?Sized>(&mut self, key: &Q) -> Option<(&K, &mut V)>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let index = self.find(key).occupied()?;
+
+        match self.entries[index].as_mut() {
+            Some((k, v)) => Some((k, v)),
+            None => None,
+        }
+    }
 }
 
 impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
