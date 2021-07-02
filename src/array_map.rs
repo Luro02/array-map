@@ -6,7 +6,7 @@ use core::ops::Index;
 use ahash::AHasher;
 
 use crate::entry::Entry;
-use crate::iter::{IntoIter, Iter, IterMut};
+use crate::iter::{IntoIter, Iter, IterMut, Keys};
 use crate::occupied::OccupiedEntry;
 use crate::utils::IterEntries;
 use crate::utils::Slot;
@@ -433,6 +433,28 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
 
     pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut::new(&mut self.entries)
+    }
+
+    /// An iterator visiting all keys in arbitrary order.
+    /// The iterator element type is `&'a K`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, i32, 11> = ArrayMap::new();
+    /// map.insert("a", 1)?;
+    /// map.insert("b", 2)?;
+    /// map.insert("c", 3)?;
+    ///
+    /// for key in map.keys() {
+    ///     println!("{}", key);
+    /// }
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn keys(&self) -> Keys<'_, K, V> {
+        Keys::new(self.iter())
     }
 }
 
