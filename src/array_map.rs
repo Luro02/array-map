@@ -296,9 +296,7 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let index = self.find(key).occupied()?;
-
-        self.entries[index].as_mut().map(|(_, v)| v)
+        self.get_key_value_mut(key).map(|(_, v)| v)
     }
 
     /// Clears the map, removing all key-value pairs.
