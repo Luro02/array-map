@@ -14,7 +14,7 @@ use crate::vacant::VacantEntry;
 
 pub type DefaultHashBuilder = BuildHasherDefault<AHasher>;
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct ArrayMap<K, V, const N: usize, B: BuildHasher = DefaultHashBuilder> {
     entries: [Option<(K, V)>; N],
     build_hasher: B,
