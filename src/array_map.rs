@@ -415,6 +415,23 @@ where
             None => None,
         }
     }
+
+    /// Returns a reference to the map's [`BuildHasher`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, DefaultHashBuilder};
+    ///
+    /// let hasher = DefaultHashBuilder::default();
+    /// let map: ArrayMap<i32, i32, 12> = ArrayMap::with_hasher(hasher);
+    /// let hasher: &DefaultHashBuilder = map.build_hasher();
+    /// ```
+    #[must_use]
+    #[doc(alias("hasher"))]
+    pub fn build_hasher(&self) -> &B {
+        &self.build_hasher
+    }
 }
 
 impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
