@@ -106,6 +106,25 @@ where
         }
     }
 
+    // Returns an occupied entry if the key is present in the map or None if it is not.
+    //
+    // This function is more generic than `Self::entry`, because a vacant entry needs to store the key that is passed
+    // to the function, but a key with type &Q can not be converted to a key of type K, which is required for the vacant entry!
+    fn occupied_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<OccupiedEntry<'_, K, V, N, B>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let index = self.find(&key).occupied()?;
+
+        Some(OccupiedEntry::new(
+            &mut self.entries,
+            index,
+            &self.build_hasher,
+            &mut self.len,
+        ))
+    }
+
     /// Returns the number of elements the map can hold in total.
     ///
     /// The returned value, will be equal to the const generic `N`.
@@ -431,6 +450,33 @@ where
     #[doc(alias("hasher"))]
     pub fn build_hasher(&self) -> &B {
         &self.build_hasher
+    }
+
+    /// Removes a key from the map, returning the stored key and value if the
+    /// key was previously in the map.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<i32, &str, 3> = ArrayMap::new();
+    ///
+    /// map.insert(1, "a")?;
+    /// assert_eq!(map.remove_entry(&1), Some((1, "a")));
+    /// assert_eq!(map.remove_entry(&1), None);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn remove_entry<Q: ?Sized>(&mut self, qkey: &Q) -> Option<(K, V)>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        Some(self.occupied_entry(qkey)?.remove_entry())
     }
 }
 
