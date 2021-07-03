@@ -515,7 +515,15 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// ```
     /// use array_map::ArrayMap;
     ///
-    /// let mut map: ArrayMap<u32, &str, 3> = ArrayMap::new();
+    /// let mut map: ArrayMap<&str, bool, 3> = ArrayMap::new();
+    /// map.insert("hello", true)?;
+    /// map.insert("valid", true)?;
+    /// map.insert("invalid", false)?;
+    ///
+    /// for (key, value) in map.iter() {
+    ///     println!("{}: {}", key, value);
+    /// }
+    /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     pub fn iter(&self) -> Iter<'_, K, V> {
         Iter::new(&self.entries)
