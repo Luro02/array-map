@@ -478,6 +478,33 @@ where
     {
         Some(self.occupied_entry(qkey)?.remove_entry())
     }
+
+    /// Removes a key from the map, returning the value at the key if the key
+    /// was previously in the map.
+    ///
+    /// The key may be any borrowed form of the map's key type, but
+    /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
+    /// the key type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<i32, &str, 3> = ArrayMap::new();
+    ///
+    /// map.insert(1, "a")?;
+    /// assert_eq!(map.remove(&1), Some("a"));
+    /// assert_eq!(map.remove(&1), None);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn remove<Q: ?Sized>(&mut self, qkey: &Q) -> Option<V>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.remove_entry(qkey).map(|(_, v)| v)
+    }
 }
 
 impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
