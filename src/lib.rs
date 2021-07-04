@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![feature(array_map, const_generics)]
+#![feature(array_map, const_generics, array_methods)]
 #![warn(clippy::nursery, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::module_inception)]
 

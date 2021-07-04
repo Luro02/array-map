@@ -8,8 +8,8 @@ use ahash::AHasher;
 use crate::entry::Entry;
 use crate::iter::{IntoIter, Iter, IterMut, Keys, Values};
 use crate::occupied::OccupiedEntry;
-use crate::utils::IterEntries;
 use crate::utils::Slot;
+use crate::utils::{ArrayExt, IterEntries};
 use crate::vacant::VacantEntry;
 
 pub type DefaultHashBuilder = BuildHasherDefault<AHasher>;
@@ -505,6 +505,133 @@ where
     {
         self.remove_entry(qkey).map(|(_, v)| v)
     }
+
+    /// Attempts to get mutable references to `M` values in the map at once, with immutable
+    /// references to the corresponding keys.
+    ///
+    /// Returns an array of length `M` with the results of each query. For soundness,
+    /// at most one mutable reference will be returned to any value. An
+    /// `Err(UnavailableMutError::Duplicate(i))` in the returned array indicates that a suitable
+    /// key-value pair exists, but a mutable reference to the value already occurs at index `i` in
+    /// the returned array.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, UnavailableMutError};
+    ///
+    /// let mut libraries: ArrayMap<&str, usize, 19> = ArrayMap::new();
+    ///
+    /// libraries.insert("Bodleian Library", 1602)?;
+    /// libraries.insert("Athenæum", 1807)?;
+    /// libraries.insert("Herzogin-Anna-Amalia-Bibliothek", 1691)?;
+    /// libraries.insert("Library of Congress", 1800)?;
+    ///
+    /// let got = libraries.get_each_key_value_mut([
+    ///     "Bodleian Library",
+    ///     "Herzogin-Anna-Amalia-Bibliothek",
+    ///     "Herzogin-Anna-Amalia-Bibliothek",
+    ///     "Gewandhaus",
+    /// ]);
+    ///
+    /// assert_eq!(
+    ///     got,
+    ///     [
+    ///         Ok((&"Bodleian Library", &mut 1602)),
+    ///         Ok((&"Herzogin-Anna-Amalia-Bibliothek", &mut 1691)),
+    ///         Err(UnavailableMutError::Duplicate(1)),
+    ///         Err(UnavailableMutError::Absent),
+    ///     ]
+    /// );
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn get_each_key_value_mut<Q: ?Sized, const M: usize>(
+        &mut self,
+        qkeys: [&Q; M],
+    ) -> [Result<(&K, &mut V), UnavailableMutError>; M]
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        // if an entry is already borrowed then an index will be present, which points to the mutable
+        // reference in the resulting array
+        let mut borrowed: [Option<usize>; N] = [(); N].map(|_| None);
+        let qkeys = qkeys.map(|qkey| self.find(qkey).occupied());
+
+        let mut entries = self.entries.each_mut().map(|entry| Some(entry));
+
+        qkeys.enumerate().map(|(idx, table_index)| {
+            let table_index = table_index.ok_or(UnavailableMutError::Absent)?;
+
+            if let Some(Some((key, value))) = entries[table_index].take() {
+                borrowed[table_index] = Some(idx);
+                Ok((&*key, value))
+            } else if let Some(idx) = borrowed[table_index] {
+                Err(UnavailableMutError::Duplicate(idx))
+            } else {
+                unreachable!("the entry should be present in entries or an entry in borrowed must be present")
+            }
+        })
+    }
+
+    /// Attempts to get mutable references to `N` values in the map at once.
+    ///
+    /// Returns an array of length `N` with the results of each query. For soundness,
+    /// at most one mutable reference will be returned to any value. An
+    /// `Err(UnavailableMutError::Duplicate(i))` in the returned array indicates that a suitable
+    /// key-value pair exists, but a mutable reference to the value already occurs at index `i` in
+    /// the returned array.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, UnavailableMutError};
+    ///
+    /// let mut libraries: ArrayMap<&str, usize, 19> = ArrayMap::new();
+    /// libraries.insert("Bodleian Library", 1602)?;
+    /// libraries.insert("Athenæum", 1807)?;
+    /// libraries.insert("Herzogin-Anna-Amalia-Bibliothek", 1691)?;
+    /// libraries.insert("Library of Congress", 1800)?;
+    ///
+    /// let got = libraries.get_each_value_mut([
+    ///     "Athenæum",
+    ///     "New York Public Library",
+    ///     "Athenæum",
+    ///     "Library of Congress",
+    /// ]);
+    /// assert_eq!(
+    ///     got,
+    ///     [
+    ///         Ok(&mut 1807),
+    ///         Err(UnavailableMutError::Absent),
+    ///         Err(UnavailableMutError::Duplicate(0)),
+    ///         Ok(&mut 1800),
+    ///     ]
+    /// );
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    #[doc(alias("get_each_mut"))]
+    pub fn get_each_value_mut<Q: ?Sized, const M: usize>(
+        &mut self,
+        qkeys: [&Q; M],
+    ) -> [Result<&mut V, UnavailableMutError>; M]
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.get_each_key_value_mut(qkeys).map(|entry| Ok(entry?.1))
+    }
+}
+
+/// The error type for [`ArrayMap::get_each_value_mut`] and [`ArrayMap::get_each_key_value_mut`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum UnavailableMutError {
+    /// The requested entry is not present in the table.
+    Absent,
+    /// The requested entry is present, but a mutable reference to it was already created.
+    ///
+    /// This includes the index of the mutable reference in the returned array.
+    Duplicate(usize),
 }
 
 impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
@@ -652,5 +779,26 @@ mod tests {
         assert_eq!(map.insert("other", "world2"), Ok(None));
         assert_eq!(map.get("hello"), Some(&"world"));
         assert_eq!(map.get("other"), Some(&"world2"));
+    }
+
+    // TODO: better test!
+    #[test]
+    fn test_get_each_mut() {
+        let mut map: ArrayMap<_, _, 19> = ArrayMap::new();
+        map.insert("foo", 0).unwrap();
+        map.insert("bar", 10).unwrap();
+        map.insert("baz", 20).unwrap();
+        map.insert("qux", 30).unwrap();
+
+        let ys = map.get_each_key_value_mut(["bar", "baz", "baz", "dip"]);
+        assert_eq!(
+            ys,
+            [
+                Ok((&"bar", &mut 10)),
+                Ok((&"baz", &mut 20)),
+                Err(UnavailableMutError::Duplicate(1)),
+                Err(UnavailableMutError::Absent),
+            ]
+        );
     }
 }
