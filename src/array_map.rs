@@ -60,6 +60,12 @@ pub struct OccupiedError;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapacityError;
 
+impl fmt::Display for CapacityError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "not enough space")
+    }
+}
+
 impl<K, V, B, const N: usize> ArrayMap<K, V, N, B>
 where
     K: Eq + Hash,
