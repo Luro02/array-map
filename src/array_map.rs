@@ -772,6 +772,30 @@ where
     }
 }
 
+impl<K, V, B, const N: usize> PartialEq<ArrayMap<K, V, N, B>> for ArrayMap<K, V, N, B>
+where
+    K: Eq + Hash,
+    V: PartialEq,
+    B: BuildHasher,
+{
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+
+        self.iter()
+            .all(|(key, value)| other.get(key).map_or(false, |v| *value == *v))
+    }
+}
+
+impl<K, V, B, const N: usize> Eq for ArrayMap<K, V, N, B>
+where
+    K: Eq + Hash,
+    V: PartialEq,
+    B: BuildHasher,
+{
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
