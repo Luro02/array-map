@@ -5,6 +5,7 @@
 
 mod array_map;
 mod entry;
+mod external_trait_impls;
 pub mod iter;
 mod occupied;
 mod utils;
