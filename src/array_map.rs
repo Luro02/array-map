@@ -22,6 +22,15 @@ pub struct ArrayMap<K, V, const N: usize, B: BuildHasher = DefaultHashBuilder> {
 }
 
 impl<K, V, const N: usize> ArrayMap<K, V, N, DefaultHashBuilder> {
+    /// Creates an empty [`ArrayMap`] with the [`DefaultHashBuilder`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, DefaultHashBuilder};
+    ///
+    /// let mut map: ArrayMap<usize, &str, 31, DefaultHashBuilder> = ArrayMap::new();
+    /// ```
     #[must_use]
     pub fn new() -> Self {
         Self::with_hasher(DefaultHashBuilder::default())
@@ -29,7 +38,41 @@ impl<K, V, const N: usize> ArrayMap<K, V, N, DefaultHashBuilder> {
 }
 
 impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
+    /// Creates an empty [`ArrayMap`] with the provided [`BuildHasher`].
+    ///
+    /// # Note
+    ///
+    /// This is function is identical to [`ArrayMap::with_build_hasher`], the only difference
+    /// is the name of the function. This function exists for API compatibility with the
+    /// standard librarys `HashMap`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, DefaultHashBuilder};
+    ///
+    /// let build_hasher = DefaultHashBuilder::default();
+    /// let mut map: ArrayMap<usize, &str, 31, DefaultHashBuilder> = ArrayMap::with_hasher(build_hasher);
+    /// ```
+    #[must_use]
+    #[doc(alias("with_build_hasher"))]
     pub fn with_hasher(build_hasher: B) -> Self {
+        Self::with_build_hasher(build_hasher)
+    }
+
+    /// Creates an empty [`ArrayMap`] with the provided [`BuildHasher`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, DefaultHashBuilder};
+    ///
+    /// let build_hasher = DefaultHashBuilder::default();
+    /// let mut map: ArrayMap<usize, &str, 31, DefaultHashBuilder> = ArrayMap::with_build_hasher(build_hasher);
+    /// ```
+    #[must_use]
+    #[doc(alias("with_hasher"))]
+    pub fn with_build_hasher(build_hasher: B) -> Self {
         Self {
             entries: [(); N].map(|_| None),
             build_hasher,
