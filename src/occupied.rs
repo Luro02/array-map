@@ -110,8 +110,7 @@ impl<'a, K: Hash, V, H: BuildHasher, const N: usize> Iterator for IterCollisions
 }
 
 impl<'a, K: Hash + Eq, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
-    fn find_with_hash(&self, start: usize, key: &K) -> Option<usize> {
-        assert_eq!(start, utils::hash_index(key, self.hasher, N));
+    fn find_with_hash(&self, key: &K) -> Option<usize> {
         IterCollisions::new(key, self.entries, self.hasher).last()
     }
 
@@ -123,7 +122,7 @@ impl<'a, K: Hash + Eq, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V
         debug_assert!(*self.len > 0);
         *self.len -= 1;
 
-        if let Some(collision) = self.find_with_hash(self.index, self.key()) {
+        if let Some(collision) = self.find_with_hash(self.key()) {
             self.entries.swap(collision, self.index);
 
             self.entries[collision].take().unwrap()
