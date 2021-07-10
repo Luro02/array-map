@@ -6,7 +6,7 @@ use core::ops::Index;
 use ahash::AHasher;
 
 use crate::entry::Entry;
-use crate::iter::{IntoIter, Iter, IterMut, Keys, Values};
+use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values};
 use crate::occupied::OccupiedEntry;
 use crate::utils::Slot;
 use crate::utils::{ArrayExt, IterEntries};
@@ -669,6 +669,71 @@ where
         Q: Hash + Eq,
     {
         self.get_each_key_value_mut(qkeys).map(|entry| Ok(entry?.1))
+    }
+
+    /// Creates an iterator which uses a closure to determine if an element should be removed.
+    ///
+    /// If the closure returns `true`, the element is removed from the map and yielded.
+    /// If the closure returns `false`, or panics, the element remains in the map and will not be
+    /// yielded.
+    ///
+    /// Note that `drain_filter` lets you mutate every value in the filter closure, regardless of
+    /// whether you choose to keep or remove it.
+    ///
+    /// If the iterator is only partially consumed or not consumed at all, each of the remaining
+    /// elements will still be subjected to the closure and removed and dropped if it returns true.
+    ///
+    /// It is unspecified how many more elements will be subjected to the closure
+    /// if a panic occurs in the closure, or a panic occurs while dropping an element,
+    /// or if the `DrainFilter` value is leaked.
+    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, N, B>
+    where
+        F: FnMut(&K, &mut V) -> bool,
+    {
+        DrainFilter::new(f, self)
+    }
+
+    /// Clears the map, returning all key-value pairs as an iterator.
+    pub fn drain(&mut self) -> Drain<'_, K, V, N, B> {
+        Drain::new(self)
+    }
+}
+
+impl<K, V, B, const N: usize> ArrayMap<K, V, N, B>
+where
+    K: Eq + Hash,
+    B: BuildHasher,
+{
+    fn occupied_entry_index(&mut self, index: usize) -> Option<OccupiedEntry<'_, K, V, N, B>> {
+        debug_assert!(index < self.capacity());
+
+        if self.entries[index].is_none() {
+            return None;
+        }
+
+        Some(OccupiedEntry::new(
+            &mut self.entries,
+            index,
+            &self.build_hasher,
+            &mut self.len,
+        ))
+    }
+
+    pub(crate) fn remove_entry_index(&mut self, index: usize) -> Option<(K, V)> {
+        debug_assert!(index < self.capacity());
+
+        Some(self.occupied_entry_index(index)?.remove_entry())
+    }
+
+    pub(crate) fn get_key_value_mut_index(&mut self, index: usize) -> Option<(&K, &mut V)> {
+        if index >= N {
+            return None;
+        }
+
+        match self.entries[index].as_mut() {
+            Some((k, v)) => Some((k, v)),
+            None => None,
+        }
     }
 }
 
