@@ -6,6 +6,7 @@ use core::ops::Index;
 use ahash::AHasher;
 
 use crate::entry::Entry;
+use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
 use crate::utils::Slot;
@@ -94,18 +95,6 @@ impl<T> FindResult<T> {
             Self::Occupied(value) => Some(value),
             Self::End | Self::Vacant(_) => None,
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct OccupiedError;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CapacityError;
-
-impl fmt::Display for CapacityError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "not enough space")
     }
 }
 
@@ -760,17 +749,6 @@ where
     }
 }
 
-/// The error type for [`ArrayMap::get_each_value_mut`] and [`ArrayMap::get_each_key_value_mut`].
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum UnavailableMutError {
-    /// The requested entry is not present in the table.
-    Absent,
-    /// The requested entry is present, but a mutable reference to it was already created.
-    ///
-    /// This includes the index of the mutable reference in the returned array.
-    Duplicate(usize),
-}
-
 impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// Returns an iterator iterating over the immutable entries of the map.
     ///
@@ -931,38 +909,6 @@ where
     V: PartialEq,
     B: BuildHasher,
 {
-}
-
-pub struct RescaleError<const N: usize, const M: usize> {
-    required_size: usize,
-}
-
-impl<const N: usize, const M: usize> RescaleError<N, M> {
-    #[must_use]
-    fn new(required_size: usize) -> Self {
-        Self { required_size }
-    }
-}
-
-impl<const N: usize, const M: usize> fmt::Debug for RescaleError<N, M> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("RescaleError").finish()
-    }
-}
-
-impl<const N: usize, const M: usize> fmt::Display for RescaleError<N, M> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            concat!(
-                "failed to rescale the map of size `{size}` and capacity `{n}`,",
-                " because the new map can hold at most `{m}` elements",
-            ),
-            size = self.required_size,
-            n = N,
-            m = M
-        )
-    }
 }
 
 #[cfg(test)]

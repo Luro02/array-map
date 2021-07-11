@@ -5,6 +5,7 @@
 
 mod array_map;
 mod entry;
+mod errors;
 mod external_trait_impls;
 pub mod iter;
 mod macros;
@@ -14,5 +15,6 @@ mod vacant;
 
 pub use crate::array_map::*;
 pub use entry::*;
+pub use errors::*;
 pub use occupied::*;
 pub use vacant::*;
