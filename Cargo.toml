@@ -7,13 +7,12 @@ edition = "2018"
 
 # TODO: re-export ahash features
 [dependencies]
-ahash = { version="0.7", default-features=false, features=[] }
-serde = { version="1.0", default-features=false, features=[], optional=true }
+ahash = { version = "0.7", default-features = false, features = [] }
+serde = { version = "1.0", default-features = false, features = [], optional = true }
 
 [dev-dependencies]
 pretty_assertions = "0.6"
 criterion = "0.3"
-iai = "0.1"
 
 [features]
 default = []
