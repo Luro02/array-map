@@ -636,6 +636,45 @@ where
     pub fn drain(&mut self) -> Drain<'_, K, V, N, B> {
         Drain::new(self)
     }
+
+    /// Tries to convert the map with capacity `N` into a map with capacity `M`.
+    ///
+    /// # Errors
+    ///
+    /// An error will be returned, if the length of the map ([`ArrayMap::len`]) is larger than `M`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<char, u32, 1> = ArrayMap::new();
+    ///
+    /// map.insert('a', 'a' as u32)?;
+    ///
+    /// // no more values can be inserted
+    ///
+    /// let rescaled: ArrayMap<_, _, 3> = map.try_rescale().expect("failed to rescale");
+    ///
+    /// assert_eq!(rescaled.len(), 1);
+    /// assert_eq!(rescaled.capacity(), 3);
+    /// assert_eq!(rescaled.get(&'a'), Some(&('a' as u32)));
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn try_rescale<const M: usize>(self) -> Result<ArrayMap<K, V, M, B>, RescaleError<N, M>> {
+        if self.len() >= M {
+            return Err(RescaleError::new(self.len()));
+        }
+
+        let mut result = ArrayMap::with_build_hasher(self.build_hasher);
+
+        for (key, value) in IntoIter::new(self.entries) {
+            // explicitly ignore the result, because it can not fail (has been checked before the loop)
+            let _ = result.insert(key, value);
+        }
+
+        Ok(result)
+    }
 }
 
 impl<K, V, B, const N: usize> ArrayMap<K, V, N, B>
@@ -892,6 +931,38 @@ where
     V: PartialEq,
     B: BuildHasher,
 {
+}
+
+pub struct RescaleError<const N: usize, const M: usize> {
+    required_size: usize,
+}
+
+impl<const N: usize, const M: usize> RescaleError<N, M> {
+    #[must_use]
+    fn new(required_size: usize) -> Self {
+        Self { required_size }
+    }
+}
+
+impl<const N: usize, const M: usize> fmt::Debug for RescaleError<N, M> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RescaleError").finish()
+    }
+}
+
+impl<const N: usize, const M: usize> fmt::Display for RescaleError<N, M> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            concat!(
+                "failed to rescale the map of size `{size}` and capacity `{n}`,",
+                " because the new map can hold at most `{m}` elements",
+            ),
+            size = self.required_size,
+            n = N,
+            m = M
+        )
+    }
 }
 
 #[cfg(test)]
