@@ -6,7 +6,7 @@ use core::ops::Index;
 use ahash::AHasher;
 
 use crate::entry::Entry;
-use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values};
+use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
 use crate::utils::Slot;
 use crate::utils::{ArrayExt, IterEntries};
@@ -382,8 +382,7 @@ where
     /// assert_eq!(map.is_empty(), true);
     /// ```
     pub fn clear(&mut self) {
-        self.entries = [(); N].map(|_| None);
-        self.len = 0;
+        self.drain();
     }
 
     /// Returns `true` if the map contains a value for the specified key.
@@ -816,6 +815,12 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// ```
     pub fn values(&self) -> Values<'_, K, V> {
         Values::new(self.iter())
+    }
+
+    /// An iterator visiting all values in arbitrary order.
+    /// The iterator element type is `&mut V`.
+    pub fn values_mut(&mut self) -> ValuesMut<'_, K, V> {
+        ValuesMut::new(self.iter_mut())
     }
 }
 
