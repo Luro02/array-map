@@ -265,9 +265,6 @@ where
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
     /// the key type.
     ///
-    /// [`Eq`]: core::cmp::Eq
-    /// [`Hash`]: core::hash::Hash
-    ///
     /// # Examples
     ///
     /// ```
@@ -294,9 +291,6 @@ where
     /// The key may be any borrowed form of the map's key type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
     /// the key type.
-    ///
-    /// [`Eq`]: core::cmp::Eq
-    /// [`Hash`]: core::hash::Hash
     ///
     /// # Examples
     ///
@@ -346,9 +340,6 @@ where
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
     /// the key type.
     ///
-    /// [`Eq`]: core::cmp::Eq
-    /// [`Hash`]: core::hash::Hash
-    ///
     /// # Examples
     ///
     /// ```
@@ -374,9 +365,6 @@ where
     /// The supplied key may be any borrowed form of the map's key type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
     /// the key type.
-    ///
-    /// [`Eq`]: core::cmp::Eq
-    /// [`Hash`]: core::hash::Hash
     ///
     /// # Examples
     ///
@@ -405,9 +393,6 @@ where
     /// The supplied key may be any borrowed form of the map's key type, but
     /// [`Hash`] and [`Eq`] on the borrowed form *must* match those for
     /// the key type.
-    ///
-    /// [`Eq`]: core::cmp::Eq
-    /// [`Hash`]: core::hash::Hash
     ///
     /// # Examples
     ///
