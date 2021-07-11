@@ -32,12 +32,52 @@ where
     }
 }
 
-impl<'a, K, V, B, const N: usize> Drop for Drain<'a, K, V, N, B>
-where
-    B: BuildHasher,
-    K: Eq + Hash,
-{
-    fn drop(&mut self) {
-        for _ in self {}
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+
+    use crate::{arraymap, ArrayMap};
+
+    fn array_collect<T, I: IntoIterator<Item = T>, const N: usize>(iter: I) -> [Option<T>; N] {
+        let mut iter = iter.into_iter();
+
+        [(); N].map(|_| iter.next())
+    }
+
+    #[test]
+    fn test_drain() {
+        let mut map = arraymap! {
+            0 => "a",
+            1 => "b",
+            2 => "c",
+            3 => "d",
+        };
+
+        let mut drained: [_; 4] = array_collect(map.drain());
+        drained.sort_unstable();
+
+        assert_eq!(
+            drained,
+            [
+                Some((0, "a")),
+                Some((1, "b")),
+                Some((2, "c")),
+                Some((3, "d"))
+            ]
+        );
+        assert_eq!(map, ArrayMap::new());
+    }
+
+    #[test]
+    fn test_drain_drop() {
+        let mut map = arraymap! {
+            0 => "a",
+            1 => "b",
+            2 => "c",
+            3 => "d",
+        };
+
+        map.drain();
+        assert_eq!(map, ArrayMap::new());
     }
 }
