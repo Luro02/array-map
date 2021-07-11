@@ -1,13 +1,19 @@
 #[macro_export]
 macro_rules! arraymap_infer {
     // To support trailing commas in the macro
-    ( $( $key:expr => $value:expr, )+ ) => {
-        $crate::arraymap_infer!($( $key => $value ),+)
+    ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr, )+ ) => {
+        $crate::arraymap_infer!($( @build_hasher => $bh, )? $( $key => $value ),+)
     };
-    ( $( $key:expr => $value:expr ),*) => {
+    ( @helper_construct $bh:expr ) => {
+        $crate::ArrayMap::with_build_hasher($bh)
+    };
+    ( @helper_construct ) => {
+        $crate::ArrayMap::new()
+    };
+    ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr ),*) => {
         {
             let value: Result<_, $crate::CapacityError> = (|| {
-                let mut _map = $crate::ArrayMap::new();
+                let mut _map = $crate::arraymap_infer!( @helper_construct $( $bh )? );
 
                 $(
                     _map.insert($key, $value)?;
@@ -30,12 +36,13 @@ macro_rules! arraymap {
         <[()]>::len(&[$( $crate::arraymap!(@replace $x ()) ),*])
     };
     // To support trailing commas in the macro
-    ( $( $key:expr => $value:expr, )+ ) => {
-        $crate::arraymap!($( $key => $value ),+)
+    ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr, )+ ) => {
+        $crate::arraymap!($( @build_hasher => $bh, )? $( $key => $value ),+)
     };
-    ( $( $key:expr => $value:expr ),*) => {
+    ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr ),*) => {
         {
             let _map: $crate::ArrayMap<_, _, { $crate::arraymap!(@count $($key),*) }, _> = $crate::arraymap_infer!(
+                $( @build_hasher => $bh, )?
                 $( $key => $value ),*
             ).expect("`arraymap` macro does not count correctly!");
 
@@ -47,6 +54,8 @@ macro_rules! arraymap {
 #[cfg(test)]
 mod tests {
     use pretty_assertions::assert_eq;
+
+    use crate::array_map::DefaultHashBuilder;
 
     #[test]
     fn test_arraymap_macro_empty() {
@@ -82,6 +91,15 @@ mod tests {
             "key_01" => "value_00",
             "key_02" => "value_00",
             "key_03" => "value_00",
+        };
+    }
+
+    #[test]
+    fn test_arraymap_macro_build_hasher() {
+        arraymap! {
+            @build_hasher => DefaultHashBuilder::default(),
+            "key_00" => "value_00",
+            "key_01" => "value_00",
         };
     }
 }
