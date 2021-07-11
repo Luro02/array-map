@@ -18,7 +18,7 @@ impl<'a, K, V> Iterator for IterMut<'a, K, V> {
     type Item = (&'a K, &'a mut V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        for entry in self.0.next() {
+        for entry in &mut self.0 {
             if let Some((k, v)) = entry {
                 return Some((k, v));
             }
