@@ -155,25 +155,6 @@ where
         }
     }
 
-    // Returns an occupied entry if the key is present in the map or None if it is not.
-    //
-    // This function is more generic than `Self::entry`, because a vacant entry needs to store the key that is passed
-    // to the function, but a key with type &Q can not be converted to a key of type K, which is required for the vacant entry!
-    fn occupied_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<OccupiedEntry<'_, K, V, N, B>>
-    where
-        K: Borrow<Q>,
-        Q: Hash + Eq,
-    {
-        let index = self.find(&key).occupied()?;
-
-        Some(OccupiedEntry::new(
-            &mut self.entries,
-            index,
-            &self.build_hasher,
-            &mut self.len,
-        ))
-    }
-
     /// Returns the number of elements the map can hold in total.
     ///
     /// The returned value, will be equal to the const generic `N`.
@@ -232,32 +213,6 @@ where
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
-    }
-
-    fn iter_from<Q: ?Sized>(&self, key: &Q) -> IterEntries<'_, K, V, N, B>
-    where
-        Q: Hash + Eq,
-        K: Borrow<Q>,
-    {
-        IterEntries::new(key, &self.build_hasher, &self.entries)
-    }
-
-    fn find<Q: ?Sized>(&self, qkey: &Q) -> FindResult<usize>
-    where
-        Q: Hash + Eq,
-        K: Borrow<Q>,
-    {
-        for slot in self.iter_from(qkey) {
-            if let Slot::Collision { index, key } = slot {
-                if key.borrow() == qkey {
-                    return FindResult::Occupied(index);
-                }
-            } else if let Slot::Vacant { index } = slot {
-                return FindResult::Vacant(index);
-            }
-        }
-
-        FindResult::End
     }
 
     /// Inserts a key-value pair into the map.
@@ -703,6 +658,51 @@ where
     K: Eq + Hash,
     B: BuildHasher,
 {
+    // Returns an occupied entry if the key is present in the map or None if it is not.
+    //
+    // This function is more generic than `Self::entry`, because a vacant entry needs to store the key that is passed
+    // to the function, but a key with type &Q can not be converted to a key of type K, which is required for the vacant entry!
+    fn occupied_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<OccupiedEntry<'_, K, V, N, B>>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        let index = self.find(&key).occupied()?;
+
+        Some(OccupiedEntry::new(
+            &mut self.entries,
+            index,
+            &self.build_hasher,
+            &mut self.len,
+        ))
+    }
+
+    fn iter_from<Q: ?Sized>(&self, key: &Q) -> IterEntries<'_, K, V, N, B>
+    where
+        Q: Hash + Eq,
+        K: Borrow<Q>,
+    {
+        IterEntries::new(key, &self.build_hasher, &self.entries)
+    }
+
+    fn find<Q: ?Sized>(&self, qkey: &Q) -> FindResult<usize>
+    where
+        Q: Hash + Eq,
+        K: Borrow<Q>,
+    {
+        for slot in self.iter_from(qkey) {
+            if let Slot::Collision { index, key } = slot {
+                if key.borrow() == qkey {
+                    return FindResult::Occupied(index);
+                }
+            } else if let Slot::Vacant { index } = slot {
+                return FindResult::Vacant(index);
+            }
+        }
+
+        FindResult::End
+    }
+
     fn occupied_entry_index(&mut self, index: usize) -> Option<OccupiedEntry<'_, K, V, N, B>> {
         debug_assert!(index < self.capacity());
 
