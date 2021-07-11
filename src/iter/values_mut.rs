@@ -11,7 +11,7 @@ use super::IterMut;
 pub struct ValuesMut<'a, K, V>(IterMut<'a, K, V>);
 
 impl<'a, K, V> ValuesMut<'a, K, V> {
-    pub(crate) fn new(iter: IterMut<'a, K, V>) -> Self {
+    pub(crate) const fn new(iter: IterMut<'a, K, V>) -> Self {
         Self(iter)
     }
 }

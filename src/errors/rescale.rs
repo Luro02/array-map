@@ -6,7 +6,7 @@ pub struct RescaleError<const N: usize, const M: usize> {
 
 impl<const N: usize, const M: usize> RescaleError<N, M> {
     #[must_use]
-    pub(crate) fn new(required_size: usize) -> Self {
+    pub(crate) const fn new(required_size: usize) -> Self {
         Self { required_size }
     }
 }

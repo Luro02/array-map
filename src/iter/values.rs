@@ -11,7 +11,7 @@ use super::Iter;
 pub struct Values<'a, K, V>(Iter<'a, K, V>);
 
 impl<'a, K, V> Values<'a, K, V> {
-    pub(crate) fn new(iter: Iter<'a, K, V>) -> Self {
+    pub(crate) const fn new(iter: Iter<'a, K, V>) -> Self {
         Self(iter)
     }
 }
