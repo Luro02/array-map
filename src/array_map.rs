@@ -80,6 +80,83 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
             len: 0,
         }
     }
+
+    /// Returns the number of elements the map can hold in total.
+    ///
+    /// The returned value, will be equal to the const generic `N`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let map: ArrayMap<i32, i32, 2> = ArrayMap::new();
+    /// assert_eq!(map.capacity(), 2);
+    ///
+    /// let map: ArrayMap<&str, usize, 1234> = ArrayMap::new();
+    /// assert_eq!(map.capacity(), 1234);
+    /// ```
+    #[must_use]
+    pub fn capacity(&self) -> usize {
+        N
+    }
+
+    /// Returns the number of elements in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<u16, &str, 3> = ArrayMap::new();
+    ///
+    /// assert_eq!(map.len(), 0);
+    /// map.insert(1, "a");
+    /// assert_eq!(map.len(), 1);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    /// Returns `true` if the map contains no elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<_, _, 3> = ArrayMap::new();
+    ///
+    /// assert_eq!(map.is_empty(), true);
+    ///
+    /// map.insert(1, "a")?;
+    /// assert_eq!(map.len(), 1);
+    /// assert_eq!(map.is_empty(), false);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Returns a reference to the map's [`BuildHasher`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, DefaultHashBuilder};
+    ///
+    /// let hasher = DefaultHashBuilder::default();
+    /// let map: ArrayMap<i32, i32, 12> = ArrayMap::with_hasher(hasher);
+    /// let hasher: &DefaultHashBuilder = map.build_hasher();
+    /// ```
+    #[must_use]
+    #[doc(alias("hasher"))]
+    pub fn build_hasher(&self) -> &B {
+        &self.build_hasher
+    }
 }
 
 #[must_use]
@@ -142,66 +219,6 @@ where
             ))),
             FindResult::End => Err(CapacityError), // TODO: when and why does this happen??? (document)
         }
-    }
-
-    /// Returns the number of elements the map can hold in total.
-    ///
-    /// The returned value, will be equal to the const generic `N`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use array_map::ArrayMap;
-    ///
-    /// let map: ArrayMap<i32, i32, 2> = ArrayMap::new();
-    /// assert_eq!(map.capacity(), 2);
-    ///
-    /// let map: ArrayMap<&str, usize, 1234> = ArrayMap::new();
-    /// assert_eq!(map.capacity(), 1234);
-    /// ```
-    #[must_use]
-    pub fn capacity(&self) -> usize {
-        N
-    }
-
-    /// Returns the number of elements in the map.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use array_map::ArrayMap;
-    ///
-    /// let mut map: ArrayMap<u16, &str, 3> = ArrayMap::new();
-    ///
-    /// assert_eq!(map.len(), 0);
-    /// map.insert(1, "a");
-    /// assert_eq!(map.len(), 1);
-    /// # Ok::<_, array_map::CapacityError>(())
-    /// ```
-    #[must_use]
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
-    /// Returns `true` if the map contains no elements.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use array_map::ArrayMap;
-    ///
-    /// let mut map: ArrayMap<_, _, 3> = ArrayMap::new();
-    ///
-    /// assert_eq!(map.is_empty(), true);
-    ///
-    /// map.insert(1, "a")?;
-    /// assert_eq!(map.len(), 1);
-    /// assert_eq!(map.is_empty(), false);
-    /// # Ok::<_, array_map::CapacityError>(())
-    /// ```
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     /// Inserts a key-value pair into the map.
@@ -410,23 +427,6 @@ where
             Some((k, v)) => Some((k, v)),
             None => None,
         }
-    }
-
-    /// Returns a reference to the map's [`BuildHasher`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use array_map::{ArrayMap, DefaultHashBuilder};
-    ///
-    /// let hasher = DefaultHashBuilder::default();
-    /// let map: ArrayMap<i32, i32, 12> = ArrayMap::with_hasher(hasher);
-    /// let hasher: &DefaultHashBuilder = map.build_hasher();
-    /// ```
-    #[must_use]
-    #[doc(alias("hasher"))]
-    pub fn build_hasher(&self) -> &B {
-        &self.build_hasher
     }
 
     /// Removes a key from the map, returning the stored key and value if the
