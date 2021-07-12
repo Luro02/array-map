@@ -664,6 +664,46 @@ where
 
         Ok(result)
     }
+
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// Calls the provided function on each entry, removing all entries,
+    /// where the function returns `false`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// // maps the chars 'a' to 'z' and '0' to '9' to their numerical value
+    /// let mut map: ArrayMap<char, u32, { 26 + 10 }> = ArrayMap::new();
+    ///
+    /// for c in 'a'..='z' {
+    ///     map.insert(c, c as u32)?;
+    /// }
+    ///
+    /// for c in '0'..='9' {
+    ///     map.insert(c, c as u32)?;
+    /// }
+    ///
+    /// // only keep chars that are not digits:
+    /// map.retain(|c, _| !c.is_ascii_digit());
+    ///
+    /// for c in 'a'..='z' {
+    ///     assert_eq!(map.get(&c), Some(&(c as u32)));
+    /// }
+    ///
+    /// for c in '0'..='9' {
+    ///     assert_eq!(map.get(&c), None);
+    /// }
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&K, &mut V) -> bool,
+    {
+        self.drain_filter(|key, value| !(f(key, value)));
+    }
 }
 
 impl<K, V, B, const N: usize> ArrayMap<K, V, N, B>
