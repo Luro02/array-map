@@ -9,7 +9,7 @@ use crate::entry::Entry;
 use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
-use crate::utils::{ArrayExt, IterEntries};
+use crate::utils::{ArrayExt, IterEntries, TryExtend};
 use crate::utils::{Slot, TryFromIterator};
 use crate::vacant::VacantEntry;
 
@@ -966,6 +966,22 @@ where
         }
 
         Ok(result)
+    }
+}
+
+impl<K, V, B, const N: usize> TryExtend<(K, V)> for ArrayMap<K, V, N, B>
+where
+    K: Eq + Hash,
+    B: BuildHasher,
+{
+    type Error = CapacityError;
+
+    fn try_extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) -> Result<(), Self::Error> {
+        for (key, value) in iter {
+            self.insert(key, value)?;
+        }
+
+        Ok(())
     }
 }
 
