@@ -37,7 +37,12 @@ where
 
             if let Some((key, value)) = self.map.get_key_value_mut_index(index) {
                 if (self.f)(key, value) {
-                    return self.map.remove_entry_index(index);
+                    let result = self.map.remove_entry_index(index);
+
+                    // removing an entry from the map, may cause other entries to fill in the empty spot
+                    self.index = index;
+
+                    return result;
                 }
             }
         }
