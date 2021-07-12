@@ -55,3 +55,24 @@ impl<'a, K: Hash, V, H: BuildHasher, const N: usize> Iterator for IterEntries<'a
         }
     }
 }
+
+impl<'a, K, V, B, const N: usize> DoubleEndedIterator for IterEntries<'a, K, V, N, B>
+where
+    K: Hash,
+    B: BuildHasher,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let (index, entry) = self.iter.next_back()?;
+
+        if let Some((key, _)) = entry {
+            // check if the current entry is a collision:
+            if utils::hash_index(key, self.hasher, N) == self.start {
+                Some(Slot::Collision { index, key })
+            } else {
+                Some(Slot::Occupied { index, key })
+            }
+        } else {
+            Some(Slot::Vacant { index })
+        }
+    }
+}
