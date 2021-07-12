@@ -1,8 +1,10 @@
 mod iter_circular;
 mod iter_entries;
+mod try_from_iterator;
 
 pub use iter_circular::*;
 pub use iter_entries::*;
+pub use try_from_iterator::*;
 
 use core::hash::{BuildHasher, Hash, Hasher};
 

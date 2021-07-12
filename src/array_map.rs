@@ -9,8 +9,8 @@ use crate::entry::Entry;
 use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
-use crate::utils::Slot;
 use crate::utils::{ArrayExt, IterEntries};
+use crate::utils::{Slot, TryFromIterator};
 use crate::vacant::VacantEntry;
 
 pub type DefaultHashBuilder = BuildHasherDefault<AHasher>;
@@ -949,6 +949,24 @@ where
     V: PartialEq,
     B: BuildHasher,
 {
+}
+
+impl<K, V, B, const N: usize> TryFromIterator<(K, V)> for ArrayMap<K, V, N, B>
+where
+    K: Eq + Hash,
+    B: BuildHasher + Default,
+{
+    type Error = CapacityError;
+
+    fn try_from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Result<Self, Self::Error> {
+        let mut result = ArrayMap::with_build_hasher(B::default());
+
+        for (key, value) in iter {
+            result.insert(key, value)?;
+        }
+
+        Ok(result)
+    }
 }
 
 #[cfg(test)]
