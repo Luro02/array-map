@@ -1,8 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 use core::mem;
 
-use crate::utils;
-use crate::utils::IterCircular;
+use crate::utils::{IterEntries, Slot};
 use crate::DefaultHashBuilder;
 
 #[derive(Debug)]
@@ -68,50 +67,26 @@ impl<'a, K, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
     }
 }
 
-#[must_use]
-struct IterCollisions<'a, K: 'a, V: 'a, const N: usize, H: BuildHasher = DefaultHashBuilder> {
-    iter: IterCircular<'a, Option<(K, V)>>,
-    hasher: &'a H,
-    start: usize,
-}
-
-impl<'a, K: Hash, V, H: BuildHasher, const N: usize> IterCollisions<'a, K, V, N, H> {
-    pub fn new(key: &K, entries: &'a [Option<(K, V)>; N], hasher: &'a H) -> Self {
-        let start = utils::hash_index(key, hasher, N);
-
-        Self {
-            iter: IterCircular::new(start, entries),
-            start,
-            hasher,
-        }
+trait DoubleEndedIteratorExt: DoubleEndedIterator {
+    fn rfind_map<B, F>(&mut self, f: F) -> Option<B>
+    where
+        F: FnMut(Self::Item) -> Option<B>,
+    {
+        self.filter_map(f).next_back()
     }
 }
 
-// TODO: can be replaced with IterEntries + Map
-impl<'a, K: Hash, V, H: BuildHasher, const N: usize> Iterator for IterCollisions<'a, K, V, N, H> {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        for (index, entry) in &mut self.iter {
-            if let Some((key, _)) = entry {
-                // check if the current entry is a collision:
-                if utils::hash_index(key, self.hasher, N) == self.start {
-                    return Some(index);
-                }
-            } else {
-                // an empty entry has been found, which means that all the following entries keys will have different hashes
-                // NOTE: does not increment self.index, because after a None, None will always be returned
-                return None;
-            }
-        }
-
-        None
-    }
-}
+impl<D: DoubleEndedIterator> DoubleEndedIteratorExt for D {}
 
 impl<'a, K: Hash + Eq, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
     fn find_with_hash(&self, key: &K) -> Option<usize> {
-        IterCollisions::new(key, self.entries, self.hasher).last()
+        IterEntries::new(key, self.hasher, self.entries).rfind_map(|slot| {
+            if let Slot::Collision { index, .. } = slot {
+                Some(index)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn remove(self) -> V {
