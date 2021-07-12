@@ -11,7 +11,7 @@ pub struct IterCircular<'a, T> {
 }
 
 impl<'a, T> IterCircular<'a, T> {
-    pub fn new(start: usize, slice: &'a [T]) -> Self {
+    pub(crate) fn new(start: usize, slice: &'a [T]) -> Self {
         assert!(start < slice.len());
 
         Self {
