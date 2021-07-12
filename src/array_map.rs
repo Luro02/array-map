@@ -985,6 +985,22 @@ where
     }
 }
 
+impl<'a, K, V, B, const N: usize> TryExtend<(&'a K, &'a V)> for ArrayMap<K, V, N, B>
+where
+    K: Eq + Hash + Copy,
+    V: Copy,
+    B: BuildHasher,
+{
+    type Error = CapacityError;
+
+    fn try_extend<T: IntoIterator<Item = (&'a K, &'a V)>>(
+        &mut self,
+        iter: T,
+    ) -> Result<(), Self::Error> {
+        self.try_extend(iter.into_iter().map(|(k, v)| (k, v)))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
