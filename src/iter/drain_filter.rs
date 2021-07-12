@@ -51,14 +51,6 @@ where
     }
 }
 
-pub(super) struct ConsumeAllOnDrop<'a, I: Iterator>(pub &'a mut I);
-
-impl<I: Iterator> Drop for ConsumeAllOnDrop<'_, I> {
-    fn drop(&mut self) {
-        self.0.for_each(mem::drop)
-    }
-}
-
 impl<'a, K, V, F, B, const N: usize> Drop for DrainFilter<'a, K, V, F, N, B>
 where
     B: BuildHasher,
@@ -66,7 +58,7 @@ where
     K: Eq + Hash,
 {
     fn drop(&mut self) {
-        mem::drop(ConsumeAllOnDrop(self))
+        self.for_each(mem::drop)
     }
 }
 
