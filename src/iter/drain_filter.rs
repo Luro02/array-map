@@ -66,7 +66,7 @@ where
 mod tests {
     use pretty_assertions::assert_eq;
 
-    use crate::{arraymap, arraymap_infer};
+    use crate::arraymap;
 
     fn array_collect<T, I: IntoIterator<Item = T>, const N: usize>(iter: I) -> [Option<T>; N] {
         let mut iter = iter.into_iter();
@@ -124,7 +124,8 @@ mod tests {
 
         assert_eq!(
             map,
-            arraymap_infer! {
+            arraymap! {
+                @infer,
                 1 => "u",
                 3 => "u",
             }
