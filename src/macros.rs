@@ -1,17 +1,17 @@
 #[macro_export]
-macro_rules! arraymap {
+macro_rules! array_map {
     // replaces `_t` with the provided expression `e`
     (@replace $_t:tt $e:expr) => { $e };
     // counts the number of tokens and returns a const expr
     (@count $($x:expr),*) => {
-        <[()]>::len(&[$( $crate::arraymap!(@replace $x ()) ),*])
+        <[()]>::len(&[$( $crate::array_map!(@replace $x ()) ),*])
     };
     // To support trailing commas in the macro
     ( @infer, $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr, )+ ) => {
-        $crate::arraymap!( @infer, $( @build_hasher => $bh, )? $( $key => $value ),+)
+        $crate::array_map!( @infer, $( @build_hasher => $bh, )? $( $key => $value ),+)
     };
     ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr, )+ ) => {
-        $crate::arraymap!( $( @build_hasher => $bh, )? $( $key => $value ),+)
+        $crate::array_map!( $( @build_hasher => $bh, )? $( $key => $value ),+)
     };
     ( @helper_construct $bh:expr ) => {
         $crate::ArrayMap::with_build_hasher($bh)
@@ -22,7 +22,7 @@ macro_rules! arraymap {
     ( @infer, $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr ),* ) => {
         {
             let value: Result<_, $crate::CapacityError> = (|| {
-                let mut _map = $crate::arraymap!( @helper_construct $( $bh )? );
+                let mut _map = $crate::array_map!( @helper_construct $( $bh )? );
 
                 $(
                     _map.insert($key, $value)?;
@@ -36,7 +36,7 @@ macro_rules! arraymap {
     };
     ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr ),* ) => {
         {
-            let _map: $crate::ArrayMap<_, _, { $crate::arraymap!(@count $($key),*) }, _> = $crate::arraymap!(
+            let _map: $crate::ArrayMap<_, _, { $crate::array_map!(@count $($key),*) }, _> = $crate::array_map!(
                 @infer,
                 $( @build_hasher => $bh, )?
                 $( $key => $value ),*
@@ -55,13 +55,13 @@ mod tests {
 
     #[test]
     fn test_arraymap_macro_empty() {
-        let map: crate::ArrayMap<(), (), 0> = arraymap!();
+        let map: crate::ArrayMap<(), (), 0> = array_map!();
         assert_eq!(map, crate::ArrayMap::new());
     }
 
     #[test]
     fn test_arraymap_macro_infer() {
-        let map = arraymap! {
+        let map = array_map! {
             "key_00" => "value_00",
             "key_01" => "value_00",
             "key_02" => "value_00",
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_arraymap_macro_trailing_comma() {
-        arraymap! {
+        array_map! {
             "key_00" => "value_00",
             "key_01" => "value_00",
             "key_02" => "value_00",
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_arraymap_macro_build_hasher() {
-        arraymap! {
+        array_map! {
             @build_hasher => DefaultHashBuilder::default(),
             "key_00" => "value_00",
             "key_01" => "value_00",
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_arraymap_macro_infer_flag() {
-        let _map: ArrayMap<_, _, 5> = arraymap! {
+        let _map: ArrayMap<_, _, 5> = array_map! {
             @infer,
             "hello" => "world",
             "foo" => "bar",

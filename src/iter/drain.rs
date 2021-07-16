@@ -36,7 +36,7 @@ where
 mod tests {
     use pretty_assertions::assert_eq;
 
-    use crate::{arraymap, ArrayMap};
+    use crate::{array_map, ArrayMap};
 
     fn array_collect<T, I: IntoIterator<Item = T>, const N: usize>(iter: I) -> [Option<T>; N] {
         let mut iter = iter.into_iter();
@@ -46,7 +46,7 @@ mod tests {
 
     #[test]
     fn test_drain() {
-        let mut map = arraymap! {
+        let mut map = array_map! {
             0 => "a",
             1 => "b",
             2 => "c",
@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn test_drain_drop() {
-        let mut map = arraymap! {
+        let mut map = array_map! {
             0 => "a",
             1 => "b",
             2 => "c",
