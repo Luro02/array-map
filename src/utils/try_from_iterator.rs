@@ -1,5 +1,6 @@
 use core::iter::IntoIterator;
-use core::mem::MaybeUninit;
+
+use crate::utils::ArrayExt;
 
 pub trait TryFromIterator<A>: Sized {
     type Error;
@@ -27,20 +28,19 @@ impl<A, const N: usize> TryFromIterator<A> for [A; N] {
     type Error = CollectArrayError;
 
     fn try_from_iter<T: IntoIterator<Item = A>>(iter: T) -> Result<Self, Self::Error> {
-        let mut array: [MaybeUninit<A>; N] = MaybeUninit::uninit_array();
         let mut iterator = iter.into_iter();
+        let mut missing = N;
 
-        for (i, item) in array.iter_mut().enumerate() {
-            if let Some(value) = iterator.next() {
-                *item = MaybeUninit::new(value);
-            } else {
-                return Err(CollectArrayError::NotEnoughItems { missing: N - i });
-            }
+        if let Some(result) = [(); N].try_map(|_| {
+            iterator.next().map(|v| {
+                missing -= 1;
+                v
+            })
+        }) {
+            Ok(result)
+        } else {
+            Err(CollectArrayError::NotEnoughItems { missing })
         }
-
-        let result: [A; N] = unsafe { MaybeUninit::array_assume_init(array) };
-
-        Ok(result)
     }
 }
 
