@@ -8,14 +8,19 @@ pub use iter_entries::*;
 pub use try_extend::*;
 pub use try_from_iterator::*;
 
+use core::borrow::Borrow;
 use core::hash::{BuildHasher, Hash, Hasher};
 
 #[must_use]
-pub fn hash_index<H: BuildHasher, Z: Hash>(value: Z, hasher: &H, capacity: usize) -> usize {
-    let mut hasher = hasher.build_hasher();
+pub(crate) fn make_hash<K, Q, B>(hash_builder: &B, value: &Q) -> u64
+where
+    K: Borrow<Q>,
+    Q: Hash + ?Sized,
+    B: BuildHasher,
+{
+    let mut hasher = hash_builder.build_hasher();
     value.hash(&mut hasher);
-
-    (hasher.finish() as usize) % capacity
+    hasher.finish()
 }
 
 pub trait ArrayExt<T, const N: usize> {

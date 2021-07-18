@@ -8,7 +8,7 @@ use crate::DefaultHashBuilder;
 pub struct IterEntries<'a, K: 'a, V: 'a, const N: usize, H: BuildHasher = DefaultHashBuilder> {
     iter: IterCircular<'a, Option<(K, V)>>,
     hasher: &'a H,
-    start: usize,
+    hash: u64,
 }
 
 impl<'a, K, V, const N: usize, H: BuildHasher> IterEntries<'a, K, V, N, H> {
@@ -17,12 +17,20 @@ impl<'a, K, V, const N: usize, H: BuildHasher> IterEntries<'a, K, V, N, H> {
         Q: Hash + Eq,
         K: Borrow<Q>,
     {
-        let start = utils::hash_index(key, hasher, N);
+        let hash = utils::make_hash::<K, Q, H>(hasher, key);
 
+        Self::new_with_hash(hash, hasher, entries)
+    }
+
+    pub(crate) fn new_with_hash(
+        hash: u64,
+        hasher: &'a H,
+        entries: &'a [Option<(K, V)>; N],
+    ) -> Self {
         Self {
-            iter: IterCircular::new(start, entries),
+            iter: IterCircular::new((hash as usize) % N, entries),
             hasher,
-            start,
+            hash,
         }
     }
 }
@@ -45,7 +53,7 @@ impl<'a, K: Hash, V, H: BuildHasher, const N: usize> Iterator for IterEntries<'a
 
         if let Some((key, _)) = entry {
             // check if the current entry is a collision:
-            if utils::hash_index(key, self.hasher, N) == self.start {
+            if utils::make_hash::<K, K, H>(self.hasher, key) == self.hash {
                 Some(Slot::Collision { index, key })
             } else {
                 Some(Slot::Occupied { index, key })
@@ -66,7 +74,7 @@ where
 
         if let Some((key, _)) = entry {
             // check if the current entry is a collision:
-            if utils::hash_index(key, self.hasher, N) == self.start {
+            if utils::make_hash::<K, K, B>(self.hasher, key) == self.hash {
                 Some(Slot::Collision { index, key })
             } else {
                 Some(Slot::Occupied { index, key })
