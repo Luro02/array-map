@@ -704,6 +704,10 @@ where
     {
         self.drain_filter(|key, value| !(f(key, value)));
     }
+
+    pub(crate) fn into_parts(self) -> (B, IntoIter<K, V, N>) {
+        (self.build_hasher, IntoIter::new(self.entries))
+    }
 }
 
 impl<K, V, B, const N: usize> ArrayMap<K, V, N, B>
