@@ -8,8 +8,11 @@ pub use iter_entries::*;
 pub use try_extend::*;
 pub use try_from_iterator::*;
 
+use core::array;
 use core::borrow::Borrow;
 use core::hash::{BuildHasher, Hash, Hasher};
+use core::mem::MaybeUninit;
+use core::ops::Try;
 
 #[must_use]
 pub(crate) fn make_hash<K, Q, B>(hash_builder: &B, value: &Q) -> u64
@@ -25,6 +28,12 @@ where
 
 pub trait ArrayExt<T, const N: usize> {
     fn enumerate(self) -> [(usize, T); N];
+
+    fn try_map<F, U, R, X>(self, f: F) -> R
+    where
+        X: Try<Output = U>,
+        R: Try<Output = [U; N], Residual = X::Residual>,
+        F: FnMut(T) -> X;
 }
 
 impl<T, const N: usize> ArrayExt<T, N> for [T; N] {
@@ -34,5 +43,26 @@ impl<T, const N: usize> ArrayExt<T, N> for [T; N] {
             index += 1;
             (index - 1, value)
         })
+    }
+
+    fn try_map<F, U, R, X>(self, mut f: F) -> R
+    where
+        X: Try<Output = U>,
+        R: Try<Output = [U; N], Residual = X::Residual>,
+        F: FnMut(T) -> X,
+    {
+        let mut array: [MaybeUninit<U>; N] = MaybeUninit::uninit_array();
+        let mut iterator = array::IntoIter::new(self);
+
+        for item in array.iter_mut() {
+            // NOTE: it is guranteed that this will not panic
+            let next = iterator.next().unwrap();
+            *item = MaybeUninit::new(f(next)?);
+        }
+
+        // SAFETY: because of the previous loops all values are guranteed to be initialized
+        let result: [U; N] = unsafe { MaybeUninit::array_assume_init(array) };
+
+        R::from_output(result)
     }
 }
