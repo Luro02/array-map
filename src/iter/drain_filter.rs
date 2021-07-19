@@ -23,7 +23,7 @@ where
     F: FnMut(&K, &mut V) -> bool,
     K: Hash + Eq,
 {
-    pub fn new(f: F, map: &'a mut ArrayMap<K, V, N, B>) -> Self {
+    pub(crate) fn new(f: F, map: &'a mut ArrayMap<K, V, N, B>) -> Self {
         Self { f, map, index: 0 }
     }
 }
