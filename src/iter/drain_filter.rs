@@ -72,12 +72,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use crate::array_map;
-
-    fn array_collect<T, I: IntoIterator<Item = T>, const N: usize>(iter: I) -> [Option<T>; N] {
-        let mut iter = iter.into_iter();
-
-        [(); N].map(|_| iter.next())
-    }
+    use crate::utils::IteratorExt;
 
     #[test]
     fn test_drain_filter_drop() {
@@ -122,7 +117,7 @@ mod tests {
             }
         });
 
-        let mut dropped: [_; 2] = array_collect(drain);
+        let mut dropped: [Option<(i32, &str)>; 2] = drain.try_collect().unwrap();
         dropped.sort_unstable();
 
         assert_eq!(dropped, [Some((0, "a")), Some((2, "c"))]);

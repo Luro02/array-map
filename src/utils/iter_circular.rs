@@ -46,15 +46,11 @@ impl<'a, T> ExactSizeIterator for IterCircular<'a, T> {}
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::IteratorExt;
+
     use super::*;
 
     use pretty_assertions::assert_eq;
-
-    fn array_collect<T, I: IntoIterator<Item = T>, const N: usize>(iter: I) -> [Option<T>; N] {
-        let mut iter = iter.into_iter();
-
-        [(); N].map(|_| iter.next())
-    }
 
     fn numbered_array<const N: usize>() -> [usize; N] {
         let mut index = 0;
@@ -68,8 +64,8 @@ mod tests {
     #[test]
     fn test_circular_fixed() {
         assert_eq!(
-            array_collect::<_, _, 10>(IterCircular::new(0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])),
-            [
+            IterCircular::new(0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).try_collect::<[Option<_>; 10]>(),
+            Ok([
                 Some((0, &0)),
                 Some((1, &1)),
                 Some((2, &2)),
@@ -80,12 +76,12 @@ mod tests {
                 Some((7, &7)),
                 Some((8, &8)),
                 Some((9, &9)),
-            ]
+            ])
         );
 
         assert_eq!(
-            array_collect::<_, _, 10>(IterCircular::new(4, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])),
-            [
+            IterCircular::new(4, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).try_collect::<[Option<_>; 10]>(),
+            Ok([
                 Some((4, &4)),
                 Some((5, &5)),
                 Some((6, &6)),
@@ -96,15 +92,17 @@ mod tests {
                 Some((1, &1)),
                 Some((2, &2)),
                 Some((3, &3)),
-            ]
+            ])
         );
     }
 
     #[test]
     fn test_circular_fixed_reverse() {
         assert_eq!(
-            array_collect::<_, _, 10>(IterCircular::new(0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).rev()),
-            [
+            IterCircular::new(0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+                .rev()
+                .try_collect::<[Option<_>; 10]>(),
+            Ok([
                 Some((9, &9)),
                 Some((8, &8)),
                 Some((7, &7)),
@@ -115,12 +113,14 @@ mod tests {
                 Some((2, &2)),
                 Some((1, &1)),
                 Some((0, &0)),
-            ]
+            ])
         );
 
         assert_eq!(
-            array_collect::<_, _, 10>(IterCircular::new(4, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).rev()),
-            [
+            IterCircular::new(4, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+                .rev()
+                .try_collect::<[Option<_>; 10]>(),
+            Ok([
                 Some((3, &3)),
                 Some((2, &2)),
                 Some((1, &1)),
@@ -131,7 +131,7 @@ mod tests {
                 Some((6, &6)),
                 Some((5, &5)),
                 Some((4, &4)),
-            ]
+            ])
         );
     }
 
@@ -152,12 +152,11 @@ mod tests {
         let array: [_; 100] = numbered_array();
 
         for i in 0..array.len() {
-            let values: [_; 100] = array_collect(IterCircular::new(i, &array)).map(Option::unwrap);
+            let values: [_; 100] = IterCircular::new(i, &array).try_collect().unwrap();
             let mut rvalues_expected = values.clone();
             rvalues_expected.reverse();
 
-            let rvalues: [_; 100] =
-                array_collect(IterCircular::new(i, &array).rev()).map(Option::unwrap);
+            let rvalues: [_; 100] = IterCircular::new(i, &array).rev().try_collect().unwrap();
 
             assert_eq!(rvalues_expected, rvalues);
 

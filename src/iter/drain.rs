@@ -41,13 +41,8 @@ where
 mod tests {
     use pretty_assertions::assert_eq;
 
+    use crate::utils::IteratorExt;
     use crate::{array_map, ArrayMap};
-
-    fn array_collect<T, I: IntoIterator<Item = T>, const N: usize>(iter: I) -> [Option<T>; N] {
-        let mut iter = iter.into_iter();
-
-        [(); N].map(|_| iter.next())
-    }
 
     #[test]
     fn test_drain() {
@@ -58,7 +53,7 @@ mod tests {
             3 => "d",
         };
 
-        let mut drained: [_; 4] = array_collect(map.drain());
+        let mut drained: [Option<(i32, &str)>; 4] = map.drain().try_collect().unwrap();
         drained.sort_unstable();
 
         assert_eq!(
