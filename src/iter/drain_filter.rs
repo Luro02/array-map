@@ -3,6 +3,11 @@ use core::mem;
 
 use crate::{ArrayMap, DefaultHashBuilder};
 
+/// A draining iterator over entries of an `ArrayMap` which do not satisfy the predicate `F`.
+///
+/// This struct is created by [`ArrayMap::drain_filter`]. See its documentation for more.
+///
+/// [`ArrayMap::drain_filter`]: crate::ArrayMap::drain_filter
 pub struct DrainFilter<'a, K, V, F, const N: usize, B: BuildHasher = DefaultHashBuilder>
 where
     F: FnMut(&K, &mut V) -> bool,
