@@ -3,7 +3,7 @@ use core::ops::Range;
 use core::slice;
 
 #[must_use]
-pub struct IterCircular<'a, T> {
+pub(crate) struct IterCircular<'a, T> {
     iter: iter::Chain<
         iter::Zip<Range<usize>, slice::Iter<'a, T>>,
         iter::Zip<Range<usize>, slice::Iter<'a, T>>,
