@@ -19,7 +19,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> Drain<'a, K, V, N, B>
 where
     K: Hash + Eq,
 {
-    pub fn new(map: &'a mut ArrayMap<K, V, N, B>) -> Self {
+    pub(crate) fn new(map: &'a mut ArrayMap<K, V, N, B>) -> Self {
         Self {
             inner: DrainFilter::new(|_, _| true, map),
         }
