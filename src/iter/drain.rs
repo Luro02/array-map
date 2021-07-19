@@ -3,6 +3,11 @@ use core::hash::{BuildHasher, Hash};
 use super::DrainFilter;
 use crate::{ArrayMap, DefaultHashBuilder};
 
+/// A draining iterator over entries of an `ArrayMap`.
+///
+/// This struct is created by [`ArrayMap::drain`]. See its documentation for more.
+///
+/// [`ArrayMap::drain`]: crate::ArrayMap::drain
 pub struct Drain<'a, K, V, const N: usize, B: BuildHasher = DefaultHashBuilder>
 where
     K: Hash + Eq,
