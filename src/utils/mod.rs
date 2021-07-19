@@ -3,8 +3,8 @@ mod iter_entries;
 mod try_extend;
 mod try_from_iterator;
 
-pub use iter_circular::*;
-pub use iter_entries::*;
+pub(crate) use iter_circular::*;
+pub(crate) use iter_entries::*;
 pub use try_extend::*;
 pub use try_from_iterator::*;
 
