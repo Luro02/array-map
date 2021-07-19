@@ -1,7 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 use core::mem;
 
-use crate::utils::{IterEntries, Slot};
+use crate::utils::{self, IterEntries, Slot};
 use crate::DefaultHashBuilder;
 
 #[derive(Debug)]
@@ -80,7 +80,9 @@ impl<D: DoubleEndedIterator> DoubleEndedIteratorExt for D {}
 
 impl<'a, K: Hash + Eq, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
     fn find_with_hash(&self, key: &K) -> Option<usize> {
-        IterEntries::new(key, self.hasher, self.entries).rfind_map(|slot| {
+        let hash = utils::make_hash::<K, K, H>(&self.hasher, key);
+
+        IterEntries::new(hash, self.entries, utils::key_hasher(self.hasher)).rfind_map(|slot| {
             if let Slot::Collision { index, .. } = slot {
                 Some(index)
             } else {

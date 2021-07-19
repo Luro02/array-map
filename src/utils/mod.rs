@@ -26,6 +26,19 @@ where
     hasher.finish()
 }
 
+#[must_use]
+pub(crate) fn adjust_hash<const N: usize>(hash: u64) -> usize {
+    (hash % (N as u64)) as usize
+}
+
+pub(crate) fn key_hasher<K, V, B>(build_hasher: &B) -> impl FnMut(&(K, V)) -> u64 + '_
+where
+    B: BuildHasher,
+    K: Hash,
+{
+    move |(k, _)| make_hash::<K, K, B>(build_hasher, k)
+}
+
 pub trait ArrayExt<T, const N: usize> {
     fn enumerate(self) -> [(usize, T); N];
 

@@ -9,7 +9,7 @@ use crate::entry::Entry;
 use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
-use crate::utils::{ArrayExt, IterEntries, TryExtend};
+use crate::utils::{self, ArrayExt, IterEntries, TryExtend};
 use crate::utils::{Slot, TryFromIterator};
 use crate::vacant::VacantEntry;
 
@@ -734,12 +734,19 @@ where
         ))
     }
 
-    fn iter_from<Q: ?Sized>(&self, key: &Q) -> IterEntries<'_, K, V, N, B>
+    fn iter_from<Q: ?Sized>(
+        &self,
+        key: &Q,
+    ) -> IterEntries<'_, (K, V), impl FnMut(&(K, V)) -> u64 + '_, N>
     where
         Q: Hash + Eq,
         K: Borrow<Q>,
     {
-        IterEntries::new(key, &self.build_hasher, &self.entries)
+        IterEntries::new(
+            utils::make_hash::<K, Q, B>(&self.build_hasher, key),
+            &self.entries,
+            utils::key_hasher(&self.build_hasher),
+        )
     }
 
     fn find<Q: ?Sized>(&self, qkey: &Q) -> FindResult<usize>
@@ -748,7 +755,11 @@ where
         K: Borrow<Q>,
     {
         for slot in self.iter_from(qkey) {
-            if let Slot::Collision { index, key } = slot {
+            if let Slot::Collision {
+                index,
+                entry: (key, _),
+            } = slot
+            {
                 if key.borrow() == qkey {
                     return FindResult::Occupied(index);
                 }
