@@ -20,6 +20,9 @@ mod macros;
 mod occupied;
 mod utils;
 mod vacant;
+pub mod ext {
+    pub use crate::utils::{CollectArrayError, IteratorExt, TryExtend, TryFromIterator};
+}
 
 pub use crate::array_map::*;
 pub use array_map_ext::*;
