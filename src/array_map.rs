@@ -614,6 +614,30 @@ where
     /// It is unspecified how many more elements will be subjected to the closure
     /// if a panic occurs in the closure, or a panic occurs while dropping an element,
     /// or if the `DrainFilter` value is leaked.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{array_map, ArrayMap};
+    /// use array_map::ext::IteratorExt;
+    ///
+    /// let mut map = array_map! {
+    ///     "hello" => "hallo",
+    ///     "world" => "welt",
+    ///     "apple" => "apfel",
+    ///     "rust" => "rost",
+    /// };
+    ///
+    /// let mut drained: [Option<(_, _)>; 4] = map.drain_filter(|k, v| k.len() < 5).try_collect().unwrap();
+    /// drained.sort_unstable();
+    ///
+    /// assert_eq!(drained, [
+    ///     None,
+    ///     None,
+    ///     None,
+    ///     Some(("rust", "rost")),
+    /// ]);
+    /// ```
     pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, N, B>
     where
         F: FnMut(&K, &mut V) -> bool,
@@ -622,6 +646,28 @@ where
     }
 
     /// Clears the map, returning all key-value pairs as an iterator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{array_map, ArrayMap};
+    /// use array_map::ext::IteratorExt;
+    ///
+    /// let mut map = array_map! {
+    ///     "hello" => "hallo",
+    ///     "world" => "welt",
+    ///     "apple" => "apfel",
+    /// };
+    ///
+    /// let mut drained: [Option<(_, _)>; 3] = map.drain().try_collect().unwrap();
+    /// drained.sort_unstable();
+    ///
+    /// assert_eq!(drained, [
+    ///     Some(("apple", "apfel")),
+    ///     Some(("hello", "hallo")),
+    ///     Some(("world", "welt")),
+    /// ]);
+    /// ```
     pub fn drain(&mut self) -> Drain<'_, K, V, N, B> {
         Drain::new(self)
     }
@@ -810,22 +856,57 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::ArrayMap;
+    /// use array_map::{ArrayMap, array_map};
+    /// use array_map::ext::IteratorExt;
+    /// # use array_map::ext::CollectArrayError;
     ///
-    /// let mut map: ArrayMap<&str, bool, 3> = ArrayMap::new();
-    /// map.insert("hello", true)?;
-    /// map.insert("valid", true)?;
-    /// map.insert("invalid", false)?;
+    /// let mut map: ArrayMap<&str, &str, 3> = array_map! {
+    ///     "hello" => "你好",
+    ///     "good night" => "晚安",
+    ///     "good bye" => "再見",
+    /// };
     ///
-    /// for (key, value) in map.iter() {
-    ///     println!("{}: {}", key, value);
-    /// }
-    /// # Ok::<_, array_map::CapacityError>(())
+    /// let mut iterated: [(&&str, &&str); 3] = map.iter().try_collect()?;
+    /// iterated.sort_unstable();
+    ///
+    /// assert_eq!(iterated, [
+    ///    (&"good bye", &"再見"),
+    ///    (&"good night", &"晚安"),
+    ///    (&"hello", &"你好"),
+    /// ]);
+    /// # Ok::<_, CollectArrayError>(())
     /// ```
     pub fn iter(&self) -> Iter<'_, K, V> {
         Iter::new(&self.entries)
     }
 
+    /// Returns an iterator iterating over the mutable entries of the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, array_map};
+    ///
+    /// let mut map = array_map! {
+    ///    0 => 1,
+    ///    1 => 2,
+    ///    2 => 3,
+    /// };
+    ///
+    /// for (key, value) in map.iter_mut() {
+    ///    if key % 2 == 0 {
+    ///       *value *= 2;
+    ///    } else {
+    ///       *value += 5;
+    ///    }
+    /// }
+    ///
+    /// assert_eq!(map, array_map! {
+    ///    0 => 2,
+    ///    1 => 7,
+    ///    2 => 6,
+    /// });
+    /// ```
     pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut::new(&mut self.entries)
     }
@@ -836,17 +917,25 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::ArrayMap;
+    /// use array_map::{ArrayMap, array_map};
+    /// use array_map::ext::IteratorExt;
+    /// # use array_map::ext::CollectArrayError;
     ///
-    /// let mut map: ArrayMap<&str, i32, 11> = ArrayMap::new();
-    /// map.insert("a", 1)?;
-    /// map.insert("b", 2)?;
-    /// map.insert("c", 3)?;
+    /// let mut map: ArrayMap<&str, &str, 3> = array_map! {
+    ///     "hello" => "salut",
+    ///     "good night" => "bonne nuit",
+    ///     "good bye" => "au revoir",
+    /// };
     ///
-    /// for key in map.keys() {
-    ///     println!("{}", key);
-    /// }
-    /// # Ok::<_, array_map::CapacityError>(())
+    /// let mut keys: [&&str; 3] = map.keys().try_collect()?;
+    /// keys.sort_unstable();
+    ///
+    /// assert_eq!(keys, [
+    ///    &"good bye",
+    ///    &"good night",
+    ///    &"hello",
+    /// ]);
+    /// # Ok::<_, CollectArrayError>(())
     /// ```
     pub fn keys(&self) -> Keys<'_, K, V> {
         Keys::new(self.iter())
@@ -858,17 +947,25 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::ArrayMap;
+    /// use array_map::{ArrayMap, array_map};
+    /// use array_map::ext::IteratorExt;
+    /// # use array_map::ext::CollectArrayError;
     ///
-    /// let mut map: ArrayMap<&str, i32, 11> = ArrayMap::new();
-    /// map.insert("a", 1)?;
-    /// map.insert("b", 2)?;
-    /// map.insert("c", 3)?;
+    /// let mut map: ArrayMap<&str, &str, 3> = array_map! {
+    ///     "hello" => "salut",
+    ///     "good night" => "bonne nuit",
+    ///     "good bye" => "au revoir",
+    /// };
     ///
-    /// for value in map.values() {
-    ///     println!("{}", value);
-    /// }
-    /// # Ok::<_, array_map::CapacityError>(())
+    /// let mut values: [&&str; 3] = map.values().try_collect()?;
+    /// values.sort_unstable();
+    ///
+    /// assert_eq!(values, [
+    ///    &"au revoir",
+    ///    &"bonne nuit",
+    ///    &"salut",
+    /// ]);
+    /// # Ok::<_, CollectArrayError>(())
     /// ```
     pub fn values(&self) -> Values<'_, K, V> {
         Values::new(self.iter())
@@ -876,6 +973,32 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
 
     /// An iterator visiting all values in arbitrary order.
     /// The iterator element type is `&mut V`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, array_map};
+    /// use array_map::ext::IteratorExt;
+    /// # use array_map::ext::CollectArrayError;
+    ///
+    /// let mut map = array_map! {
+    ///    0 => 1,
+    ///    1 => 2,
+    ///    2 => 3,
+    /// };
+    ///
+    /// for value in map.values_mut() {
+    ///    if *value % 2 == 0 {
+    ///       *value += 1;
+    ///    }
+    /// }
+    ///
+    /// assert_eq!(map, array_map! {
+    ///    0 => 1,
+    ///    1 => 3,
+    ///    2 => 3,
+    /// });
+    /// ```
     pub fn values_mut(&mut self) -> ValuesMut<'_, K, V> {
         ValuesMut::new(self.iter_mut())
     }
