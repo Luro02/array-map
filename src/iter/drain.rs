@@ -1,21 +1,21 @@
 use core::hash::{BuildHasher, Hash};
 
 use super::DrainFilter;
-use crate::{ArrayMap, DefaultHashBuilder};
+use crate::ArrayMap;
 
 /// A draining iterator over entries of an `ArrayMap`.
 ///
 /// This struct is created by [`ArrayMap::drain`]. See its documentation for more.
 ///
 /// [`ArrayMap::drain`]: crate::ArrayMap::drain
-pub struct Drain<'a, K, V, const N: usize, B: BuildHasher = DefaultHashBuilder>
+pub struct Drain<'a, K, V, B: BuildHasher, const N: usize>
 where
     K: Hash + Eq,
 {
-    inner: DrainFilter<'a, K, V, fn(&K, &mut V) -> bool, N, B>,
+    inner: DrainFilter<'a, K, V, fn(&K, &mut V) -> bool, B, N>,
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> Drain<'a, K, V, N, B>
+impl<'a, K, V, B: BuildHasher, const N: usize> Drain<'a, K, V, B, N>
 where
     K: Hash + Eq,
 {
@@ -26,7 +26,7 @@ where
     }
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> Iterator for Drain<'a, K, V, N, B>
+impl<'a, K, V, B: BuildHasher, const N: usize> Iterator for Drain<'a, K, V, B, N>
 where
     K: Eq + Hash,
 {
@@ -37,7 +37,7 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ahash"))]
 mod tests {
     use pretty_assertions::assert_eq;
 

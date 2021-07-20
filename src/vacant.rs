@@ -1,23 +1,23 @@
 use core::hash::BuildHasher;
 
-use crate::{DefaultHashBuilder, OccupiedEntry};
+use crate::OccupiedEntry;
 
 #[derive(Debug)]
-pub struct VacantEntry<'a, K: 'a, V: 'a, const N: usize, H: BuildHasher = DefaultHashBuilder> {
+pub struct VacantEntry<'a, K: 'a, V: 'a, B, const N: usize> {
     key: K,
     entries: &'a mut [Option<(K, V)>; N],
     index: usize,
-    hasher: &'a H,
+    build_hasher: &'a B,
     len: &'a mut usize,
 }
 
-impl<'a, K, V, const N: usize, H: BuildHasher> VacantEntry<'a, K, V, N, H> {
+impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
     #[must_use]
     pub(crate) fn new(
         key: K,
         entries: &'a mut [Option<(K, V)>; N],
         index: usize,
-        hasher: &'a H,
+        build_hasher: &'a B,
         len: &'a mut usize,
     ) -> Self {
         assert!(index < N);
@@ -27,7 +27,7 @@ impl<'a, K, V, const N: usize, H: BuildHasher> VacantEntry<'a, K, V, N, H> {
             key,
             entries,
             index,
-            hasher,
+            build_hasher,
             len,
         }
     }
@@ -51,11 +51,11 @@ impl<'a, K, V, const N: usize, H: BuildHasher> VacantEntry<'a, K, V, N, H> {
     }
 
     #[must_use]
-    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, N, H> {
+    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, B, N> {
         debug_assert!(self.entries[self.index].is_none());
         self.entries[self.index] = Some((self.key, value));
         *self.len += 1;
 
-        OccupiedEntry::new(self.entries, self.index, self.hasher, self.len)
+        OccupiedEntry::new(self.entries, self.index, self.build_hasher, self.len)
     }
 }

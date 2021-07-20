@@ -2,22 +2,21 @@ use core::hash::{BuildHasher, Hash};
 use core::mem;
 
 use crate::utils::{self, IterEntries, Slot};
-use crate::DefaultHashBuilder;
 
 #[derive(Debug)]
-pub struct OccupiedEntry<'a, K: 'a, V: 'a, const N: usize, H: BuildHasher = DefaultHashBuilder> {
+pub struct OccupiedEntry<'a, K: 'a, V: 'a, B, const N: usize> {
     entries: &'a mut [Option<(K, V)>; N],
     index: usize,
-    hasher: &'a H,
+    build_hasher: &'a B,
     len: &'a mut usize,
 }
 
-impl<'a, K, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
+impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     #[must_use]
     pub(crate) fn new(
         entries: &'a mut [Option<(K, V)>; N],
         index: usize,
-        hasher: &'a H,
+        build_hasher: &'a B,
         len: &'a mut usize,
     ) -> Self {
         debug_assert_eq!(entries.len(), N);
@@ -28,7 +27,7 @@ impl<'a, K, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
         Self {
             entries,
             index,
-            hasher,
+            build_hasher,
             len,
         }
     }
@@ -78,17 +77,19 @@ trait DoubleEndedIteratorExt: DoubleEndedIterator {
 
 impl<D: DoubleEndedIterator> DoubleEndedIteratorExt for D {}
 
-impl<'a, K: Hash + Eq, V, const N: usize, H: BuildHasher> OccupiedEntry<'a, K, V, N, H> {
+impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     fn find_with_hash(&self, key: &K) -> Option<usize> {
-        let hash = utils::make_hash::<K, K, H>(&self.hasher, key);
+        let hash = utils::make_hash::<K, K, B>(&self.build_hasher, key);
 
-        IterEntries::new(hash, self.entries, utils::key_hasher(self.hasher)).rfind_map(|slot| {
-            if let Slot::Collision { index, .. } = slot {
-                Some(index)
-            } else {
-                None
-            }
-        })
+        IterEntries::new(hash, self.entries, utils::key_hasher(self.build_hasher)).rfind_map(
+            |slot| {
+                if let Slot::Collision { index, .. } = slot {
+                    Some(index)
+                } else {
+                    None
+                }
+            },
+        )
     }
 
     pub fn remove(self) -> V {

@@ -1,9 +1,7 @@
 use core::borrow::Borrow;
 use core::fmt;
-use core::hash::{BuildHasher, BuildHasherDefault, Hash};
+use core::hash::{BuildHasher, Hash};
 use core::ops::Index;
-
-use ahash::AHasher;
 
 use crate::entry::Entry;
 use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
@@ -13,15 +11,21 @@ use crate::utils::{self, ArrayExt, IterEntries, TryExtend};
 use crate::utils::{Slot, TryFromIterator};
 use crate::vacant::VacantEntry;
 
-pub type DefaultHashBuilder = BuildHasherDefault<AHasher>;
+/// Default hasher for [`ArrayMap`].
+#[cfg(feature = "ahash")]
+pub type DefaultHashBuilder = core::hash::BuildHasherDefault<ahash::AHasher>;
+/// Dummy default hasher
+#[cfg(not(feature = "ahash"))]
+pub enum DefaultHashBuilder {}
 
 #[derive(Copy, Clone)]
-pub struct ArrayMap<K, V, const N: usize, B: BuildHasher = DefaultHashBuilder> {
+pub struct ArrayMap<K, V, const N: usize, B = DefaultHashBuilder> {
     entries: [Option<(K, V)>; N],
     build_hasher: B,
     len: usize,
 }
 
+#[cfg(feature = "ahash")]
 impl<K, V, const N: usize> ArrayMap<K, V, N, DefaultHashBuilder> {
     /// Creates an empty [`ArrayMap`] with the [`DefaultHashBuilder`].
     ///
@@ -202,7 +206,7 @@ where
     /// assert_eq!(letters.get(&'y'), None);
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn entry(&mut self, key: K) -> Result<Entry<'_, K, V, N, B>, CapacityError> {
+    pub fn entry(&mut self, key: K) -> Result<Entry<'_, K, V, B, N>, CapacityError> {
         match self.find(&key) {
             FindResult::Occupied(index) => Ok(Entry::Occupied(OccupiedEntry::new(
                 &mut self.entries,
@@ -638,7 +642,7 @@ where
     ///     Some(("rust", "rost")),
     /// ]);
     /// ```
-    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, N, B>
+    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, B, N>
     where
         F: FnMut(&K, &mut V) -> bool,
     {
@@ -668,7 +672,7 @@ where
     ///     Some(("world", "welt")),
     /// ]);
     /// ```
-    pub fn drain(&mut self) -> Drain<'_, K, V, N, B> {
+    pub fn drain(&mut self) -> Drain<'_, K, V, B, N> {
         Drain::new(self)
     }
 
@@ -765,7 +769,7 @@ where
     //
     // This function is more generic than `Self::entry`, because a vacant entry needs to store the key that is passed
     // to the function, but a key with type &Q can not be converted to a key of type K, which is required for the vacant entry!
-    fn occupied_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<OccupiedEntry<'_, K, V, N, B>>
+    fn occupied_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<OccupiedEntry<'_, K, V, B, N>>
     where
         K: Borrow<Q>,
         Q: Hash + Eq,
@@ -817,7 +821,7 @@ where
         FindResult::End
     }
 
-    fn occupied_entry_index(&mut self, index: usize) -> Option<OccupiedEntry<'_, K, V, N, B>> {
+    fn occupied_entry_index(&mut self, index: usize) -> Option<OccupiedEntry<'_, K, V, B, N>> {
         debug_assert!(index < self.capacity());
 
         if self.entries[index].is_none() {
@@ -1139,7 +1143,7 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ahash"))]
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;

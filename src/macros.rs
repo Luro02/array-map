@@ -17,7 +17,16 @@ macro_rules! array_map {
         $crate::ArrayMap::with_build_hasher($bh)
     };
     ( @helper_construct ) => {
-        $crate::ArrayMap::new()
+        {
+            #[cfg(feature = "ahash")]
+            {
+                $crate::ArrayMap::new()
+            }
+            #[cfg(not(feature = "ahash"))]
+            {
+                ::core::compile_error!("`ahash` feature is disabled, so a build_hasher must be specified explicitly!")
+            }
+        }
     };
     ( @infer, $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr ),* ) => {
         {
@@ -47,7 +56,7 @@ macro_rules! array_map {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ahash"))]
 mod tests {
     use pretty_assertions::assert_eq;
 

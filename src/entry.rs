@@ -2,7 +2,6 @@ use core::hash::{BuildHasher, Hash};
 
 use crate::occupied::OccupiedEntry;
 use crate::vacant::VacantEntry;
-use crate::DefaultHashBuilder;
 
 /// A view into a single entry in a map, which may either be vacant or occupied.
 ///
@@ -11,14 +10,14 @@ use crate::DefaultHashBuilder;
 /// [`ArrayMap`]: crate::ArrayMap
 /// [`entry`]: crate::ArrayMap::entry
 #[derive(Debug)]
-pub enum Entry<'a, K: 'a, V: 'a, const N: usize, B: BuildHasher = DefaultHashBuilder> {
+pub enum Entry<'a, K: 'a, V: 'a, B, const N: usize> {
     /// An occupied entry.
-    Occupied(OccupiedEntry<'a, K, V, N, B>),
+    Occupied(OccupiedEntry<'a, K, V, B, N>),
     /// A vacant entry.
-    Vacant(VacantEntry<'a, K, V, N, B>),
+    Vacant(VacantEntry<'a, K, V, B, N>),
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> Entry<'a, K, V, N, B> {
+impl<'a, K, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
     /// Returns a reference to this entry's key.
     ///
     /// # Examples
@@ -71,7 +70,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> Entry<'a, K, V, N, B> {
     }
 }
 
-impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, N, B> {
+impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
     /// Sets the value of the entry, and returns an [`OccupiedEntry`].
     ///
     /// # Examples
@@ -85,7 +84,7 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, N, B> {
     /// assert_eq!(entry.key(), &"horseyland");
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, N, B> {
+    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, B, N> {
         match self {
             Self::Occupied(mut entry) => {
                 entry.insert(value);
@@ -208,7 +207,7 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, N, B> {
     }
 }
 
-impl<'a, K: Hash, V: Default, B: BuildHasher, const N: usize> Entry<'a, K, V, N, B> {
+impl<'a, K: Hash, V: Default, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
     /// Ensures a value is in the entry by inserting the default value if empty,
     /// and returns a mutable reference to the value in the entry.
     ///
@@ -231,20 +230,20 @@ impl<'a, K: Hash, V: Default, B: BuildHasher, const N: usize> Entry<'a, K, V, N,
     }
 }
 
-impl<'a, K, V, const N: usize, B> From<OccupiedEntry<'a, K, V, N, B>> for Entry<'a, K, V, N, B>
+impl<'a, K, V, const N: usize, B> From<OccupiedEntry<'a, K, V, B, N>> for Entry<'a, K, V, B, N>
 where
     B: BuildHasher,
 {
-    fn from(value: OccupiedEntry<'a, K, V, N, B>) -> Self {
+    fn from(value: OccupiedEntry<'a, K, V, B, N>) -> Self {
         Self::Occupied(value)
     }
 }
 
-impl<'a, K, V, const N: usize, B> From<VacantEntry<'a, K, V, N, B>> for Entry<'a, K, V, N, B>
+impl<'a, K, V, const N: usize, B> From<VacantEntry<'a, K, V, B, N>> for Entry<'a, K, V, B, N>
 where
     B: BuildHasher,
 {
-    fn from(value: VacantEntry<'a, K, V, N, B>) -> Self {
+    fn from(value: VacantEntry<'a, K, V, B, N>) -> Self {
         Self::Vacant(value)
     }
 }

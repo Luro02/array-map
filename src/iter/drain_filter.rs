@@ -1,14 +1,14 @@
 use core::hash::{BuildHasher, Hash};
 use core::mem;
 
-use crate::{ArrayMap, DefaultHashBuilder};
+use crate::ArrayMap;
 
 /// A draining iterator over entries of an `ArrayMap` which do not satisfy the predicate `F`.
 ///
 /// This struct is created by [`ArrayMap::drain_filter`]. See its documentation for more.
 ///
 /// [`ArrayMap::drain_filter`]: crate::ArrayMap::drain_filter
-pub struct DrainFilter<'a, K, V, F, const N: usize, B: BuildHasher = DefaultHashBuilder>
+pub struct DrainFilter<'a, K, V, F, B: BuildHasher, const N: usize>
 where
     F: FnMut(&K, &mut V) -> bool,
     K: Hash + Eq,
@@ -18,7 +18,7 @@ where
     index: usize,
 }
 
-impl<'a, K, V, F, B: BuildHasher, const N: usize> DrainFilter<'a, K, V, F, N, B>
+impl<'a, K, V, F, B: BuildHasher, const N: usize> DrainFilter<'a, K, V, F, B, N>
 where
     F: FnMut(&K, &mut V) -> bool,
     K: Hash + Eq,
@@ -28,7 +28,7 @@ where
     }
 }
 
-impl<'a, K, V, F, B: BuildHasher, const N: usize> Iterator for DrainFilter<'a, K, V, F, N, B>
+impl<'a, K, V, F, B: BuildHasher, const N: usize> Iterator for DrainFilter<'a, K, V, F, B, N>
 where
     F: FnMut(&K, &mut V) -> bool,
     K: Eq + Hash,
@@ -56,7 +56,7 @@ where
     }
 }
 
-impl<'a, K, V, F, B, const N: usize> Drop for DrainFilter<'a, K, V, F, N, B>
+impl<'a, K, V, F, B, const N: usize> Drop for DrainFilter<'a, K, V, F, B, N>
 where
     B: BuildHasher,
     F: FnMut(&K, &mut V) -> bool,
@@ -67,7 +67,7 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ahash"))]
 mod tests {
     use pretty_assertions::assert_eq;
 

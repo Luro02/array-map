@@ -5,7 +5,8 @@
     never_type,
     maybe_uninit_uninit_array,
     maybe_uninit_array_assume_init,
-    try_trait_v2
+    try_trait_v2,
+    stmt_expr_attributes
 )]
 #![warn(clippy::nursery, clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::module_inception)]
