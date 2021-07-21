@@ -2,9 +2,23 @@ use core::iter::IntoIterator;
 
 use crate::utils::ArrayExt;
 
+/// Tries to construct `Self` from an iterator.
+///
+/// # Examples
+///
+/// ```
+/// use core::array;
+/// use array_map::ext::TryFromIterator;
+///
+/// let mut iterator = array::IntoIter::new([1, 2, 3, 4, 5]);
+///
+/// assert_eq!(<[usize; 5]>::try_from_iter(iterator), Ok([1, 2, 3, 4, 5]));
+/// ```
 pub trait TryFromIterator<A>: Sized {
+    /// The error returned if it failed to collect into `Self`.
     type Error;
 
+    /// Tries to construct `Self` from an iterator.
     fn try_from_iter<T: IntoIterator<Item = A>>(iter: T) -> Result<Self, Self::Error>;
 }
 
