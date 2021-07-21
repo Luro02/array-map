@@ -69,7 +69,8 @@ impl<T, const N: usize> ArrayExt<T, N> for [T; N] {
             *item = MaybeUninit::new(f(next)?);
         }
 
-        // SAFETY: because of the previous loops all values are guranteed to be initialized
+        // SAFETY: because of the previous loops all values are guranteed to be
+        //         initialized
         let result: [U; N] = unsafe { MaybeUninit::array_assume_init(array) };
 
         R::from_output(result)

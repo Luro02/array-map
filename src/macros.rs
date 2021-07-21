@@ -60,7 +60,8 @@ macro_rules! array_map {
 mod tests {
     use pretty_assertions::assert_eq;
 
-    use crate::{array_map::DefaultHashBuilder, ArrayMap};
+    use crate::array_map::DefaultHashBuilder;
+    use crate::ArrayMap;
 
     #[test]
     fn test_arraymap_macro_empty() {

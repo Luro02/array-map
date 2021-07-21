@@ -47,9 +47,9 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     ///
     /// # Note
     ///
-    /// This is function is identical to [`ArrayMap::with_build_hasher`], the only difference
-    /// is the name of the function. This function exists for API compatibility with the
-    /// standard librarys `HashMap`.
+    /// This is function is identical to [`ArrayMap::with_build_hasher`], the
+    /// only difference is the name of the function. This function exists
+    /// for API compatibility with the standard librarys `HashMap`.
     ///
     /// # Examples
     ///
@@ -57,7 +57,8 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     /// use array_map::{ArrayMap, DefaultHashBuilder};
     ///
     /// let build_hasher = DefaultHashBuilder::default();
-    /// let mut map: ArrayMap<usize, &str, 31, DefaultHashBuilder> = ArrayMap::with_hasher(build_hasher);
+    /// let mut map: ArrayMap<usize, &str, 31, DefaultHashBuilder> =
+    ///     ArrayMap::with_hasher(build_hasher);
     /// ```
     #[must_use]
     #[doc(alias("with_build_hasher"))]
@@ -73,7 +74,8 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     /// use array_map::{ArrayMap, DefaultHashBuilder};
     ///
     /// let build_hasher = DefaultHashBuilder::default();
-    /// let mut map: ArrayMap<usize, &str, 31, DefaultHashBuilder> = ArrayMap::with_build_hasher(build_hasher);
+    /// let mut map: ArrayMap<usize, &str, 31, DefaultHashBuilder> =
+    ///     ArrayMap::with_build_hasher(build_hasher);
     /// ```
     #[must_use]
     #[doc(alias("with_hasher"))]
@@ -184,7 +186,8 @@ where
     K: Eq + Hash,
     B: BuildHasher,
 {
-    /// Gets the given key's corresponding entry in the map for in-place manipulation.
+    /// Gets the given key's corresponding entry in the map for in-place
+    /// manipulation.
     ///
     /// # Examples
     ///
@@ -221,7 +224,8 @@ where
                 &self.build_hasher,
                 &mut self.len,
             ))),
-            FindResult::End => Err(CapacityError), // TODO: when and why does this happen??? (document)
+            FindResult::End => Err(CapacityError), /* TODO: when and why does this happen???
+                                                    * (document) */
         }
     }
 
@@ -487,14 +491,15 @@ where
         self.remove_entry(qkey).map(|(_, v)| v)
     }
 
-    /// Attempts to get mutable references to `M` values in the map at once, with immutable
-    /// references to the corresponding keys.
+    /// Attempts to get mutable references to `M` values in the map at once,
+    /// with immutable references to the corresponding keys.
     ///
-    /// Returns an array of length `M` with the results of each query. For soundness,
-    /// at most one mutable reference will be returned to any value. An
-    /// `Err(UnavailableMutError::Duplicate(i))` in the returned array indicates that a suitable
-    /// key-value pair exists, but a mutable reference to the value already occurs at index `i` in
-    /// the returned array.
+    /// Returns an array of length `M` with the results of each query. For
+    /// soundness, at most one mutable reference will be returned to any
+    /// value. An `Err(UnavailableMutError::Duplicate(i))` in the returned
+    /// array indicates that a suitable key-value pair exists, but a mutable
+    /// reference to the value already occurs at index `i` in the returned
+    /// array.
     ///
     /// # Examples
     ///
@@ -534,8 +539,8 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        // if an entry is already borrowed then an index will be present, which points to the mutable
-        // reference in the resulting array
+        // if an entry is already borrowed then an index will be present, which points
+        // to the mutable reference in the resulting array
         let mut borrowed: [Option<usize>; N] = [(); N].map(|_| None);
         let qkeys = qkeys.map(|qkey| self.find(qkey).occupied());
 
@@ -557,11 +562,12 @@ where
 
     /// Attempts to get mutable references to `N` values in the map at once.
     ///
-    /// Returns an array of length `N` with the results of each query. For soundness,
-    /// at most one mutable reference will be returned to any value. An
-    /// `Err(UnavailableMutError::Duplicate(i))` in the returned array indicates that a suitable
-    /// key-value pair exists, but a mutable reference to the value already occurs at index `i` in
-    /// the returned array.
+    /// Returns an array of length `N` with the results of each query. For
+    /// soundness, at most one mutable reference will be returned to any
+    /// value. An `Err(UnavailableMutError::Duplicate(i))` in the returned
+    /// array indicates that a suitable key-value pair exists, but a mutable
+    /// reference to the value already occurs at index `i` in the returned
+    /// array.
     ///
     /// # Examples
     ///
@@ -603,27 +609,29 @@ where
         self.get_each_key_value_mut(qkeys).map(|entry| Ok(entry?.1))
     }
 
-    /// Creates an iterator which uses a closure to determine if an element should be removed.
+    /// Creates an iterator which uses a closure to determine if an element
+    /// should be removed.
     ///
-    /// If the closure returns `true`, the element is removed from the map and yielded.
-    /// If the closure returns `false`, or panics, the element remains in the map and will not be
-    /// yielded.
+    /// If the closure returns `true`, the element is removed from the map and
+    /// yielded. If the closure returns `false`, or panics, the element
+    /// remains in the map and will not be yielded.
     ///
-    /// Note that `drain_filter` lets you mutate every value in the filter closure, regardless of
-    /// whether you choose to keep or remove it.
+    /// Note that `drain_filter` lets you mutate every value in the filter
+    /// closure, regardless of whether you choose to keep or remove it.
     ///
-    /// If the iterator is only partially consumed or not consumed at all, each of the remaining
-    /// elements will still be subjected to the closure and removed and dropped if it returns true.
+    /// If the iterator is only partially consumed or not consumed at all, each
+    /// of the remaining elements will still be subjected to the closure and
+    /// removed and dropped if it returns true.
     ///
-    /// It is unspecified how many more elements will be subjected to the closure
-    /// if a panic occurs in the closure, or a panic occurs while dropping an element,
-    /// or if the `DrainFilter` value is leaked.
+    /// It is unspecified how many more elements will be subjected to the
+    /// closure if a panic occurs in the closure, or a panic occurs while
+    /// dropping an element, or if the `DrainFilter` value is leaked.
     ///
     /// # Examples
     ///
     /// ```
-    /// use array_map::{array_map, ArrayMap};
     /// use array_map::ext::IteratorExt;
+    /// use array_map::{array_map, ArrayMap};
     ///
     /// let mut map = array_map! {
     ///     "hello" => "hallo",
@@ -632,15 +640,11 @@ where
     ///     "rust" => "rost",
     /// };
     ///
-    /// let mut drained: [Option<(_, _)>; 4] = map.drain_filter(|k, v| k.len() < 5).try_collect().unwrap();
+    /// let mut drained: [Option<(_, _)>; 4] =
+    ///     map.drain_filter(|k, v| k.len() < 5).try_collect().unwrap();
     /// drained.sort_unstable();
     ///
-    /// assert_eq!(drained, [
-    ///     None,
-    ///     None,
-    ///     None,
-    ///     Some(("rust", "rost")),
-    /// ]);
+    /// assert_eq!(drained, [None, None, None, Some(("rust", "rost")),]);
     /// ```
     pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, B, N>
     where
@@ -654,8 +658,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use array_map::{array_map, ArrayMap};
     /// use array_map::ext::IteratorExt;
+    /// use array_map::{array_map, ArrayMap};
     ///
     /// let mut map = array_map! {
     ///     "hello" => "hallo",
@@ -666,11 +670,14 @@ where
     /// let mut drained: [Option<(_, _)>; 3] = map.drain().try_collect().unwrap();
     /// drained.sort_unstable();
     ///
-    /// assert_eq!(drained, [
-    ///     Some(("apple", "apfel")),
-    ///     Some(("hello", "hallo")),
-    ///     Some(("world", "welt")),
-    /// ]);
+    /// assert_eq!(
+    ///     drained,
+    ///     [
+    ///         Some(("apple", "apfel")),
+    ///         Some(("hello", "hallo")),
+    ///         Some(("world", "welt")),
+    ///     ]
+    /// );
     /// ```
     pub fn drain(&mut self) -> Drain<'_, K, V, B, N> {
         Drain::new(self)
@@ -680,7 +687,8 @@ where
     ///
     /// # Errors
     ///
-    /// An error will be returned, if the length of the map ([`ArrayMap::len`]) is larger than `M`.
+    /// An error will be returned, if the length of the map ([`ArrayMap::len`])
+    /// is larger than `M`.
     ///
     /// # Examples
     ///
@@ -708,7 +716,8 @@ where
         let mut result = ArrayMap::with_build_hasher(self.build_hasher);
 
         for (key, value) in IntoIter::new(self.entries) {
-            // explicitly ignore the result, because it can not fail (has been checked before the loop)
+            // explicitly ignore the result, because it can not fail (has been checked
+            // before the loop)
             let _ = result.insert(key, value);
         }
 
@@ -765,10 +774,13 @@ where
     K: Eq + Hash,
     B: BuildHasher,
 {
-    // Returns an occupied entry if the key is present in the map or None if it is not.
+    // Returns an occupied entry if the key is present in the map or None if it is
+    // not.
     //
-    // This function is more generic than `Self::entry`, because a vacant entry needs to store the key that is passed
-    // to the function, but a key with type &Q can not be converted to a key of type K, which is required for the vacant entry!
+    // This function is more generic than `Self::entry`, because a vacant entry
+    // needs to store the key that is passed to the function, but a key with
+    // type &Q can not be converted to a key of type K, which is required for the
+    // vacant entry!
     fn occupied_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<OccupiedEntry<'_, K, V, B, N>>
     where
         K: Borrow<Q>,
@@ -860,8 +872,8 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::{ArrayMap, array_map};
     /// use array_map::ext::IteratorExt;
+    /// use array_map::{array_map, ArrayMap};
     /// # use array_map::ext::CollectArrayError;
     ///
     /// let mut map: ArrayMap<&str, &str, 3> = array_map! {
@@ -873,11 +885,14 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// let mut iterated: [(&&str, &&str); 3] = map.iter().try_collect()?;
     /// iterated.sort_unstable();
     ///
-    /// assert_eq!(iterated, [
-    ///    (&"good bye", &"再見"),
-    ///    (&"good night", &"晚安"),
-    ///    (&"hello", &"你好"),
-    /// ]);
+    /// assert_eq!(
+    ///     iterated,
+    ///     [
+    ///         (&"good bye", &"再見"),
+    ///         (&"good night", &"晚安"),
+    ///         (&"hello", &"你好"),
+    ///     ]
+    /// );
     /// # Ok::<_, CollectArrayError>(())
     /// ```
     pub fn iter(&self) -> Iter<'_, K, V> {
@@ -889,7 +904,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::{ArrayMap, array_map};
+    /// use array_map::{array_map, ArrayMap};
     ///
     /// let mut map = array_map! {
     ///    0 => 1,
@@ -898,18 +913,21 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// };
     ///
     /// for (key, value) in map.iter_mut() {
-    ///    if key % 2 == 0 {
-    ///       *value *= 2;
-    ///    } else {
-    ///       *value += 5;
-    ///    }
+    ///     if key % 2 == 0 {
+    ///         *value *= 2;
+    ///     } else {
+    ///         *value += 5;
+    ///     }
     /// }
     ///
-    /// assert_eq!(map, array_map! {
-    ///    0 => 2,
-    ///    1 => 7,
-    ///    2 => 6,
-    /// });
+    /// assert_eq!(
+    ///     map,
+    ///     array_map! {
+    ///        0 => 2,
+    ///        1 => 7,
+    ///        2 => 6,
+    ///     }
+    /// );
     /// ```
     pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut::new(&mut self.entries)
@@ -921,8 +939,8 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::{ArrayMap, array_map};
     /// use array_map::ext::IteratorExt;
+    /// use array_map::{array_map, ArrayMap};
     /// # use array_map::ext::CollectArrayError;
     ///
     /// let mut map: ArrayMap<&str, &str, 3> = array_map! {
@@ -934,11 +952,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// let mut keys: [&&str; 3] = map.keys().try_collect()?;
     /// keys.sort_unstable();
     ///
-    /// assert_eq!(keys, [
-    ///    &"good bye",
-    ///    &"good night",
-    ///    &"hello",
-    /// ]);
+    /// assert_eq!(keys, [&"good bye", &"good night", &"hello",]);
     /// # Ok::<_, CollectArrayError>(())
     /// ```
     pub fn keys(&self) -> Keys<'_, K, V> {
@@ -951,8 +965,8 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::{ArrayMap, array_map};
     /// use array_map::ext::IteratorExt;
+    /// use array_map::{array_map, ArrayMap};
     /// # use array_map::ext::CollectArrayError;
     ///
     /// let mut map: ArrayMap<&str, &str, 3> = array_map! {
@@ -964,11 +978,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// let mut values: [&&str; 3] = map.values().try_collect()?;
     /// values.sort_unstable();
     ///
-    /// assert_eq!(values, [
-    ///    &"au revoir",
-    ///    &"bonne nuit",
-    ///    &"salut",
-    /// ]);
+    /// assert_eq!(values, [&"au revoir", &"bonne nuit", &"salut",]);
     /// # Ok::<_, CollectArrayError>(())
     /// ```
     pub fn values(&self) -> Values<'_, K, V> {
@@ -981,8 +991,8 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::{ArrayMap, array_map};
     /// use array_map::ext::IteratorExt;
+    /// use array_map::{array_map, ArrayMap};
     /// # use array_map::ext::CollectArrayError;
     ///
     /// let mut map = array_map! {
@@ -992,16 +1002,19 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// };
     ///
     /// for value in map.values_mut() {
-    ///    if *value % 2 == 0 {
-    ///       *value += 1;
-    ///    }
+    ///     if *value % 2 == 0 {
+    ///         *value += 1;
+    ///     }
     /// }
     ///
-    /// assert_eq!(map, array_map! {
-    ///    0 => 1,
-    ///    1 => 3,
-    ///    2 => 3,
-    /// });
+    /// assert_eq!(
+    ///     map,
+    ///     array_map! {
+    ///        0 => 1,
+    ///        1 => 3,
+    ///        2 => 3,
+    ///     }
+    /// );
     /// ```
     pub fn values_mut(&mut self) -> ValuesMut<'_, K, V> {
         ValuesMut::new(self.iter_mut())
@@ -1027,8 +1040,8 @@ where
 }
 
 impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a ArrayMap<K, V, N, B> {
-    type Item = (&'a K, &'a V);
     type IntoIter = Iter<'a, K, V>;
+    type Item = (&'a K, &'a V);
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
@@ -1036,8 +1049,8 @@ impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a ArrayMap<K, 
 }
 
 impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a mut ArrayMap<K, V, N, B> {
-    type Item = (&'a K, &'a mut V);
     type IntoIter = IterMut<'a, K, V>;
+    type Item = (&'a K, &'a mut V);
 
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
@@ -1045,8 +1058,8 @@ impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a mut ArrayMap
 }
 
 impl<K, V, B: BuildHasher, const N: usize> IntoIterator for ArrayMap<K, V, N, B> {
-    type Item = (K, V);
     type IntoIter = IntoIter<K, V, N>;
+    type Item = (K, V);
 
     fn into_iter(self) -> Self::IntoIter {
         IntoIter::new(self.entries)

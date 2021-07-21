@@ -8,6 +8,7 @@ use crate::utils::ArrayExt;
 ///
 /// ```
 /// use core::array;
+///
 /// use array_map::ext::TryFromIterator;
 ///
 /// let mut iterator = array::IntoIter::new([1, 2, 3, 4, 5]);

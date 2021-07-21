@@ -1,5 +1,4 @@
-use core::array;
-use core::iter;
+use core::{array, iter};
 
 #[must_use]
 pub struct IntoIter<K, V, const N: usize>(iter::Flatten<array::IntoIter<Option<(K, V)>, N>>);

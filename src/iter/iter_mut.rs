@@ -1,5 +1,4 @@
-use core::fmt;
-use core::slice;
+use core::{fmt, slice};
 
 #[must_use]
 pub struct IterMut<'a, K, V>(slice::IterMut<'a, Option<(K, V)>>);

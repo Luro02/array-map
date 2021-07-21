@@ -4,7 +4,8 @@ use super::Iter;
 
 /// An iterator over the immutable values of an `ArrayMap`.
 ///
-/// This struct is created by [`ArrayMap::values`]. See its documentation for more.
+/// This struct is created by [`ArrayMap::values`]. See its documentation for
+/// more.
 ///
 /// [`ArrayMap::values`]: crate::ArrayMap::values
 #[must_use]

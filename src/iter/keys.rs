@@ -4,7 +4,8 @@ use super::Iter;
 
 /// An iterator over the keys of an `ArrayMap`.
 ///
-/// This struct is created by [`ArrayMap::keys`]. See its documentation for more.
+/// This struct is created by [`ArrayMap::keys`]. See its documentation for
+/// more.
 ///
 /// [`ArrayMap::keys`]: crate::ArrayMap::keys
 #[must_use]

@@ -4,7 +4,8 @@ use super::IterMut;
 
 /// An iterator over the mutable values of an `ArrayMap`.
 ///
-/// This struct is created by [`ArrayMap::values_mut`]. See its documentation for more.
+/// This struct is created by [`ArrayMap::values_mut`]. See its documentation
+/// for more.
 ///
 /// [`ArrayMap::values_mut`]: crate::ArrayMap::values_mut
 #[must_use]

@@ -48,13 +48,13 @@ impl<'a, K, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
     /// let mut map: ArrayMap<&str, u32, 17> = ArrayMap::new();
     ///
     /// map.entry("poneyland")?
-    ///    .and_modify(|e| { *e += 1 })
-    ///    .or_insert(42);
+    ///     .and_modify(|e| *e += 1)
+    ///     .or_insert(42);
     /// assert_eq!(map["poneyland"], 42);
     ///
     /// map.entry("poneyland")?
-    ///    .and_modify(|e| { *e += 1 })
-    ///    .or_insert(42);
+    ///     .and_modify(|e| *e += 1)
+    ///     .or_insert(42);
     /// assert_eq!(map["poneyland"], 43);
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
@@ -94,7 +94,8 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
         }
     }
 
-    /// Sets the value of the entry, and returns the old value if the entry was occupied.
+    /// Sets the value of the entry, and returns the old value if the entry was
+    /// occupied.
     ///
     /// # Examples
     ///
@@ -154,8 +155,9 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
         Self::or_insert_with(self, || default)
     }
 
-    /// Ensures a value is in the entry by inserting the result of the default function if empty,
-    /// and returns a mutable reference to the value in the entry.
+    /// Ensures a value is in the entry by inserting the result of the default
+    /// function if empty, and returns a mutable reference to the value in
+    /// the entry.
     ///
     /// # Examples
     ///
@@ -177,12 +179,13 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
         }
     }
 
-    /// Ensures a value is in the entry by inserting, if empty, the result of the default function.
-    /// This method allows for generating key-derived values for insertion by providing the default
-    /// function a reference to the key that was moved during the `.entry(key)` method call.
+    /// Ensures a value is in the entry by inserting, if empty, the result of
+    /// the default function. This method allows for generating key-derived
+    /// values for insertion by providing the default function a reference
+    /// to the key that was moved during the `.entry(key)` method call.
     ///
-    /// The reference to the moved key is provided so that cloning or copying the key is
-    /// unnecessary, unlike with `.or_insert_with(|| ... )`.
+    /// The reference to the moved key is provided so that cloning or copying
+    /// the key is unnecessary, unlike with `.or_insert_with(|| ... )`.
     ///
     /// # Examples
     ///
@@ -191,7 +194,8 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
     ///
     /// let mut map: ArrayMap<&str, usize, 17> = ArrayMap::new();
     ///
-    /// map.entry("poneyland")?.or_insert_with_key(|key| key.chars().count());
+    /// map.entry("poneyland")?
+    ///     .or_insert_with_key(|key| key.chars().count());
     ///
     /// assert_eq!(map["poneyland"], 9);
     /// # Ok::<_, array_map::CapacityError>(())

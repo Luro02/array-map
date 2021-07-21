@@ -5,7 +5,8 @@ use crate::ArrayMap;
 
 /// A draining iterator over entries of an `ArrayMap`.
 ///
-/// This struct is created by [`ArrayMap::drain`]. See its documentation for more.
+/// This struct is created by [`ArrayMap::drain`]. See its documentation for
+/// more.
 ///
 /// [`ArrayMap::drain`]: crate::ArrayMap::drain
 pub struct Drain<'a, K, V, B: BuildHasher, const N: usize>

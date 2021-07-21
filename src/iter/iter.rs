@@ -1,5 +1,4 @@
-use core::iter;
-use core::slice;
+use core::{iter, slice};
 
 #[must_use]
 pub struct Iter<'a, K, V>(iter::Flatten<slice::Iter<'a, Option<(K, V)>>>);

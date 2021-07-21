@@ -37,7 +37,9 @@ fn criterion_benchmark(c: &mut Criterion) {
                         (
                             (0..elems).zip((0..elems).map(|i| i * 2 + 5)),
                             ArrayMap::<_, _, CAPACITY, _>::new(),
-                            // ArrayMap::<_, _, CAPACITY, _>::with_hasher(BuildHasherDefault::<CollisionHasher>::default()),
+                            /* ArrayMap::<_, _, CAPACITY,
+                             * _>::with_hasher(BuildHasherDefault::<CollisionHasher>::
+                             * default()), */
                         )
                     },
                     |(mut iter, mut map)| {

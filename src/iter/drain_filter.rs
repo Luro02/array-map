@@ -3,9 +3,11 @@ use core::mem;
 
 use crate::ArrayMap;
 
-/// A draining iterator over entries of an `ArrayMap` which do not satisfy the predicate `F`.
+/// A draining iterator over entries of an `ArrayMap` which do not satisfy the
+/// predicate `F`.
 ///
-/// This struct is created by [`ArrayMap::drain_filter`]. See its documentation for more.
+/// This struct is created by [`ArrayMap::drain_filter`]. See its documentation
+/// for more.
 ///
 /// [`ArrayMap::drain_filter`]: crate::ArrayMap::drain_filter
 pub struct DrainFilter<'a, K, V, F, B: BuildHasher, const N: usize>
@@ -44,7 +46,8 @@ where
                 if (self.f)(key, value) {
                     let result = self.map.remove_entry_index(index);
 
-                    // removing an entry from the map, may cause other entries to fill in the empty spot
+                    // removing an entry from the map, may cause other entries to fill in the empty
+                    // spot
                     self.index = index;
 
                     return result;
