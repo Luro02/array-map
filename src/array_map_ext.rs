@@ -2,7 +2,7 @@ use core::hash::{BuildHasher, Hash};
 
 use crate::array_map::ArrayMap;
 use crate::errors::CapacityError;
-use crate::utils::TryExtend;
+use crate::ext::TryExtend;
 
 pub trait ArrayMapExt<K, V, B: BuildHasher, const N: usize>: Sized
 where

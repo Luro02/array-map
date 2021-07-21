@@ -15,15 +15,13 @@ mod array_map;
 mod array_map_ext;
 mod entry;
 mod errors;
+pub mod ext;
 mod external_trait_impls;
 pub mod iter;
 mod macros;
 mod occupied;
 mod utils;
 mod vacant;
-pub mod ext {
-    pub use crate::utils::{CollectArrayError, IteratorExt, TryExtend, TryFromIterator};
-}
 
 pub use crate::array_map::*;
 pub use array_map_ext::*;

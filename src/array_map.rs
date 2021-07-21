@@ -5,10 +5,10 @@ use core::ops::Index;
 
 use crate::entry::Entry;
 use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
+use crate::ext::{TryExtend, TryFromIterator};
 use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
-use crate::utils::{self, ArrayExt, IterEntries, TryExtend};
-use crate::utils::{Slot, TryFromIterator};
+use crate::utils::{self, ArrayExt, IterEntries, Slot};
 use crate::vacant::VacantEntry;
 
 /// Default hasher for [`ArrayMap`].

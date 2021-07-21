@@ -46,7 +46,7 @@ impl<'a, T> ExactSizeIterator for IterCircular<'a, T> {}
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::IteratorExt;
+    use crate::ext::IteratorExt;
 
     use super::*;
 

@@ -72,7 +72,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use crate::array_map;
-    use crate::utils::IteratorExt;
+    use crate::ext::IteratorExt;
 
     #[test]
     fn test_drain_filter_drop() {

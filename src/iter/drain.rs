@@ -41,7 +41,7 @@ where
 mod tests {
     use pretty_assertions::assert_eq;
 
-    use crate::utils::IteratorExt;
+    use crate::ext::IteratorExt;
     use crate::{array_map, ArrayMap};
 
     #[test]
