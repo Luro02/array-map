@@ -1,7 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 use core::mem;
 
-use crate::utils::{self, IterEntries, Slot};
+use crate::utils::{self, invariant, IterEntries, Slot};
 
 #[derive(Debug)]
 pub struct OccupiedEntry<'a, K: 'a, V: 'a, B, const N: usize> {
@@ -12,17 +12,26 @@ pub struct OccupiedEntry<'a, K: 'a, V: 'a, B, const N: usize> {
 }
 
 impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
+    /// Constructs a new `OccupiedEntry`.
+    ///
+    /// # Safety
+    ///
+    /// The following invariants must hold:
+    /// - `entries.len() == N` (should be guaranteed by the compiler)
+    /// - `index < N` (index must not be out of bounds)
+    /// - `entries[index].is_some()` (otherwise the entry would not be occupied)
+    /// - `len > 0` and `len <= N`
     #[must_use]
-    pub(crate) fn new(
+    pub(crate) unsafe fn new(
         entries: &'a mut [Option<(K, V)>; N],
         index: usize,
         build_hasher: &'a B,
         len: &'a mut usize,
     ) -> Self {
-        debug_assert_eq!(entries.len(), N);
-        debug_assert!(index < N);
-        debug_assert!(entries[index].is_some());
-        debug_assert!(*len > 0);
+        invariant(entries.len() == N);
+        invariant(index < N);
+        invariant(entries[index].is_some());
+        invariant(*len > 0 && *len <= N);
 
         Self {
             entries,
@@ -79,7 +88,7 @@ impl<D: DoubleEndedIterator> DoubleEndedIteratorExt for D {}
 
 impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     fn find_with_hash(&self, key: &K) -> Option<usize> {
-        let hash = utils::make_hash::<K, K, B>(&self.build_hasher, key);
+        let hash = utils::make_hash::<K, K, B>(self.build_hasher, key);
 
         IterEntries::new(hash, self.entries, utils::key_hasher(self.build_hasher)).rfind_map(
             |slot| {
@@ -92,10 +101,12 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
         )
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn remove(self) -> V {
         self.remove_entry().1
     }
 
+    #[allow(clippy::must_use_candidate)]
     pub fn remove_entry(self) -> (K, V) {
         debug_assert!(*self.len > 0);
         *self.len -= 1;
@@ -147,7 +158,7 @@ mod tests {
 
         let build_hasher = BuildHasherDefault::<CollisionHasher>::default();
         let mut len = 4;
-        let mut occupied = OccupiedEntry::new(&mut entries, 0, &build_hasher, &mut len);
+        let mut occupied = unsafe { OccupiedEntry::new(&mut entries, 0, &build_hasher, &mut len) };
 
         assert_eq!(occupied.key(), &0);
         assert_eq!(occupied.get(), &"a");

@@ -35,6 +35,18 @@ where
     move |(k, _)| make_hash::<K, K, B>(build_hasher, k)
 }
 
+/// Asserts that `x` is always `true`.
+///
+/// # Safety
+///
+/// `x` must be `true`
+pub(crate) unsafe fn invariant(x: bool) {
+    debug_assert!(x, "invariant does not hold");
+    if !x {
+        ::core::hint::unreachable_unchecked()
+    }
+}
+
 pub trait ArrayExt<T, const N: usize> {
     fn enumerate(self) -> [(usize, T); N];
 

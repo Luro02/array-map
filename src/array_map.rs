@@ -211,12 +211,14 @@ where
     /// ```
     pub fn entry(&mut self, key: K) -> Result<Entry<'_, K, V, B, N>, CapacityError> {
         match self.find(&key) {
-            FindResult::Occupied(index) => Ok(Entry::Occupied(OccupiedEntry::new(
-                &mut self.entries,
-                index,
-                &self.build_hasher,
-                &mut self.len,
-            ))),
+            FindResult::Occupied(index) => unsafe {
+                Ok(Entry::Occupied(OccupiedEntry::new(
+                    &mut self.entries,
+                    index,
+                    &self.build_hasher,
+                    &mut self.len,
+                )))
+            },
             FindResult::Vacant(index) => Ok(Entry::Vacant(VacantEntry::new(
                 key,
                 &mut self.entries,
@@ -788,12 +790,14 @@ where
     {
         let index = self.find(&key).occupied()?;
 
-        Some(OccupiedEntry::new(
-            &mut self.entries,
-            index,
-            &self.build_hasher,
-            &mut self.len,
-        ))
+        unsafe {
+            Some(OccupiedEntry::new(
+                &mut self.entries,
+                index,
+                &self.build_hasher,
+                &mut self.len,
+            ))
+        }
     }
 
     fn iter_from<Q: ?Sized>(
@@ -840,12 +844,14 @@ where
             return None;
         }
 
-        Some(OccupiedEntry::new(
-            &mut self.entries,
-            index,
-            &self.build_hasher,
-            &mut self.len,
-        ))
+        unsafe {
+            Some(OccupiedEntry::new(
+                &mut self.entries,
+                index,
+                &self.build_hasher,
+                &mut self.len,
+            ))
+        }
     }
 
     pub(crate) fn remove_entry_index(&mut self, index: usize) -> Option<(K, V)> {

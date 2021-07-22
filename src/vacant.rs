@@ -56,6 +56,6 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
         self.entries[self.index] = Some((self.key, value));
         *self.len += 1;
 
-        OccupiedEntry::new(self.entries, self.index, self.build_hasher, self.len)
+        unsafe { OccupiedEntry::new(self.entries, self.index, self.build_hasher, self.len) }
     }
 }
