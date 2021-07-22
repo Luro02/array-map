@@ -9,7 +9,11 @@
     stmt_expr_attributes
 )]
 #![warn(clippy::nursery, clippy::pedantic)]
-#![allow(clippy::module_name_repetitions, clippy::module_inception)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::module_inception,
+    clippy::redundant_pub_crate
+)]
 
 mod array_map;
 mod array_map_ext;
