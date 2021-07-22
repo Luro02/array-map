@@ -219,13 +219,15 @@ where
                     &mut self.len,
                 )))
             },
-            FindResult::Vacant(index) => Ok(Entry::Vacant(VacantEntry::new(
-                key,
-                &mut self.entries,
-                index,
-                &self.build_hasher,
-                &mut self.len,
-            ))),
+            FindResult::Vacant(index) => unsafe {
+                Ok(Entry::Vacant(VacantEntry::new(
+                    key,
+                    &mut self.entries,
+                    index,
+                    &self.build_hasher,
+                    &mut self.len,
+                )))
+            },
             FindResult::End => Err(CapacityError), /* TODO: when and why does this happen???
                                                     * (document) */
         }
