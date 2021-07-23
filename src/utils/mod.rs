@@ -4,7 +4,6 @@ mod iter_entries;
 pub(crate) use iter_circular::*;
 pub(crate) use iter_entries::*;
 
-use core::array;
 use core::borrow::Borrow;
 use core::hash::{BuildHasher, Hash, Hasher};
 use core::mem::MaybeUninit;
@@ -89,7 +88,7 @@ impl<T, const N: usize> ArrayExt<T, N> for [T; N] {
         F: FnMut(T) -> X,
     {
         let mut array: [MaybeUninit<U>; N] = MaybeUninit::uninit_array();
-        let mut iterator = array::IntoIter::new(self);
+        let mut iterator = self.into_iter();
 
         for item in array.iter_mut() {
             // NOTE: it is guranteed that this will not panic

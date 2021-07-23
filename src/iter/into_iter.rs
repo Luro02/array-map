@@ -7,7 +7,7 @@ pub struct IntoIter<K, V, const N: usize>(array::IntoIter<Option<(K, V)>, N>);
 
 impl<K, V, const N: usize> IntoIter<K, V, N> {
     pub(crate) fn new(entries: [Option<(K, V)>; N]) -> Self {
-        Self(array::IntoIter::new(entries))
+        Self(entries.into_iter())
     }
 
     fn iter(&self) -> impl Iterator<Item = &(K, V)> {
