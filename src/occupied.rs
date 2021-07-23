@@ -3,6 +3,10 @@ use core::mem;
 
 use crate::utils::{self, invariant, unwrap_unchecked, IterEntries, Slot};
 
+/// A view into an occupied entry in an `ArrayMap`. It is part of the [`Entry`]
+/// enum.
+///
+/// [`Entry`]: crate::Entry
 #[derive(Debug)]
 pub struct OccupiedEntry<'a, K: 'a, V: 'a, B, const N: usize> {
     entries: &'a mut [Option<(K, V)>; N],
@@ -53,16 +57,61 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
         }
     }
 
+    /// Returns a reference to the entry's key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    ///
+    /// let occupied_entry = map.entry("good")?.insert_entry("job");
+    ///
+    /// assert_eq!(occupied_entry.key(), &"good");
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[must_use]
     pub fn key(&self) -> &K {
         self.entry().0
     }
 
+    /// Returns a reference to the entry's value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    ///
+    /// let occupied_entry = map.entry("good")?.insert_entry("job");
+    ///
+    /// assert_eq!(occupied_entry.get(), &"job");
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[must_use]
     pub fn get(&self) -> &V {
         self.entry().1
     }
 
+    /// Returns a mutable reference to the entry's value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    ///
+    /// let mut occupied_entry = map.entry("good")?.insert_entry("job");
+    ///
+    /// assert_eq!(occupied_entry.get(), &"job");
+    /// *occupied_entry.get_mut() = "friend";
+    ///
+    /// assert_eq!(occupied_entry.get(), &"friend");
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[must_use]
     pub fn get_mut(&mut self) -> &mut V {
         // SAFETY: invariants are guranteed by the constructor
@@ -74,12 +123,46 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
         }
     }
 
-    pub fn insert(&mut self, mut value: V) -> V {
-        mem::swap(self.get_mut(), &mut value);
-
-        value
+    /// Replaces the existing value with the provided value and returns the old
+    /// value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    /// let mut occupied_entry = map.entry("good")?.insert_entry("job");
+    ///
+    /// assert_eq!(occupied_entry.get(), &"job");
+    ///
+    /// let old_value = occupied_entry.insert("friend");
+    /// assert_eq!(old_value, "job");
+    ///
+    /// assert_eq!(occupied_entry.get(), &"friend");
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn insert(&mut self, value: V) -> V {
+        mem::replace(self.get_mut(), value)
     }
 
+    /// Converts the `OccupiedEntry` into a mutable reference to the value in
+    /// the entry with a lifetime bound to the map itself.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    /// let mut occupied_entry = map.entry("good")?.insert_entry("job");
+    ///
+    /// let value: &mut &str = occupied_entry.into_mut();
+    /// *value = "friend";
+    ///
+    /// assert_eq!(map.get("good"), Some(&"friend"));
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[must_use]
     pub fn into_mut(self) -> &'a mut V {
         // SAFETY: invariants are guranteed by the constructor
@@ -118,11 +201,49 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
         )
     }
 
+    /// Removes the key value pair stored in the map for this entry and returns
+    /// the value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    /// map.insert("good", "job")?;
+    ///
+    /// assert_eq!(map.contains_key("good"), true);
+    ///
+    /// let mut occupied_entry = map.entry("good")?.insert_entry("job");
+    /// assert_eq!(occupied_entry.remove(), "job");
+    ///
+    /// assert_eq!(map.contains_key("good"), false);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[allow(clippy::must_use_candidate)]
     pub fn remove(self) -> V {
         self.remove_entry().1
     }
 
+    /// Removes the key value pair stored in the map for this entry and return
+    /// the key value pair.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    /// map.insert("good", "job")?;
+    ///
+    /// assert_eq!(map.contains_key("good"), true);
+    ///
+    /// let mut occupied_entry = map.entry("good")?.insert_entry("job");
+    /// assert_eq!(occupied_entry.remove_entry(), ("good", "job"));
+    ///
+    /// assert_eq!(map.contains_key("good"), false);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[allow(clippy::must_use_candidate)]
     pub fn remove_entry(self) -> (K, V) {
         debug_assert!(*self.len > 0);
