@@ -1,3 +1,4 @@
+use core::fmt;
 use core::hash::{BuildHasher, Hash};
 
 use crate::occupied::OccupiedEntry;
@@ -9,7 +10,6 @@ use crate::vacant::VacantEntry;
 ///
 /// [`ArrayMap`]: crate::ArrayMap
 /// [`entry`]: crate::ArrayMap::entry
-#[derive(Debug)]
 pub enum Entry<'a, K: 'a, V: 'a, B, const N: usize> {
     /// An occupied entry.
     Occupied(OccupiedEntry<'a, K, V, B, N>),
@@ -249,5 +249,19 @@ where
 {
     fn from(value: VacantEntry<'a, K, V, B, N>) -> Self {
         Self::Vacant(value)
+    }
+}
+
+impl<'a, K, V, B, const N: usize> fmt::Debug for Entry<'a, K, V, B, N>
+where
+    K: fmt::Debug,
+    V: fmt::Debug,
+    B: BuildHasher,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Vacant(value) => f.debug_tuple(stringify!(Entry)).field(value).finish(),
+            Self::Occupied(value) => f.debug_tuple(stringify!(Entry)).field(value).finish(),
+        }
     }
 }

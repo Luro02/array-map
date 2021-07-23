@@ -1,9 +1,9 @@
+use core::fmt;
 use core::hash::BuildHasher;
 
 use crate::utils::invariant;
 use crate::OccupiedEntry;
 
-#[derive(Debug)]
 pub struct VacantEntry<'a, K: 'a, V: 'a, B, const N: usize> {
     key: K,
     entries: &'a mut [Option<(K, V)>; N],
@@ -74,5 +74,18 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
         *self.len += 1;
 
         unsafe { OccupiedEntry::new(self.entries, self.index, self.build_hasher, self.len) }
+    }
+}
+
+impl<'a, K, V, B, const N: usize> fmt::Debug for VacantEntry<'a, K, V, B, N>
+where
+    K: fmt::Debug,
+    V: fmt::Debug,
+    B: BuildHasher,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple(stringify!(VacantEntry))
+            .field(self.key())
+            .finish()
     }
 }

@@ -1,5 +1,5 @@
 use core::hash::{BuildHasher, Hash};
-use core::mem;
+use core::{fmt, mem};
 
 use crate::utils::{self, invariant, unwrap_unchecked, IterEntries, Slot};
 
@@ -7,7 +7,6 @@ use crate::utils::{self, invariant, unwrap_unchecked, IterEntries, Slot};
 /// enum.
 ///
 /// [`Entry`]: crate::Entry
-#[derive(Debug)]
 pub struct OccupiedEntry<'a, K: 'a, V: 'a, B, const N: usize> {
     entries: &'a mut [Option<(K, V)>; N],
     index: usize,
@@ -264,6 +263,19 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
     }
 }
 
+impl<'a, K, V, B, const N: usize> fmt::Debug for OccupiedEntry<'a, K, V, B, N>
+where
+    K: fmt::Debug,
+    V: fmt::Debug,
+    B: BuildHasher,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(stringify!(OccupiedEntry))
+            .field("key", self.key())
+            .field("value", self.get())
+            .finish()
+    }
+}
 #[cfg(test)]
 mod tests {
     use core::hash::{BuildHasherDefault, Hasher};
