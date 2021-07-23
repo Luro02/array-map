@@ -4,6 +4,10 @@ use core::hash::BuildHasher;
 use crate::utils::{invariant, unwrap_unchecked};
 use crate::OccupiedEntry;
 
+/// A view into a vacant entry in an `ArrayMap`. It is part of the [`Entry`]
+/// enum.
+///
+/// [`Entry`]: crate::Entry
 pub struct VacantEntry<'a, K: 'a, V: 'a, B, const N: usize> {
     key: K,
     entries: &'a mut [Option<(K, V)>; N],
@@ -49,11 +53,53 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
         }
     }
 
+    /// Returns a reference to the entry's key.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, Entry};
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    ///
+    /// let vacant_entry = {
+    ///     if let Entry::Vacant(vacant) = map.entry("good")? {
+    ///         vacant
+    ///     } else {
+    ///         unreachable!()
+    ///     }
+    /// };
+    ///
+    /// assert_eq!(vacant_entry.key(), &"good");
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[must_use]
     pub fn key(&self) -> &K {
         &self.key
     }
 
+    /// Inserts the entry’s key and the given value into the map, and returns a
+    /// mutable reference to the value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, Entry};
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    ///
+    /// let vacant_entry = {
+    ///     if let Entry::Vacant(vacant) = map.entry("good")? {
+    ///         vacant
+    ///     } else {
+    ///         unreachable!()
+    ///     }
+    /// };
+    ///
+    /// assert_eq!(vacant_entry.insert("morning"), &mut "morning");
+    /// assert_eq!(map.get("good"), Some(&"morning"));
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     pub fn insert(self, value: V) -> &'a mut V {
         // SAFETY: invariants are guranteed by the constructor
         unsafe {
@@ -65,11 +111,55 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
         }
     }
 
+    /// Takes ownership of the key, leaving the entry vacant.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, Entry};
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    ///
+    /// let vacant_entry = {
+    ///     if let Entry::Vacant(vacant) = map.entry("good")? {
+    ///         vacant
+    ///     } else {
+    ///         unreachable!()
+    ///     }
+    /// };
+    ///
+    /// let key = vacant_entry.into_key();
+    /// assert_eq!(key, "good");
+    /// assert_eq!(map.contains_key(&key), false);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[must_use]
     pub fn into_key(self) -> K {
         self.key
     }
 
+    /// Inserts the value, returning an `OccupiedEntry`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use array_map::{ArrayMap, Entry};
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    ///
+    /// let vacant_entry = {
+    ///     if let Entry::Vacant(vacant) = map.entry("good")? {
+    ///         vacant
+    ///     } else {
+    ///         unreachable!()
+    ///     }
+    /// };
+    ///
+    /// let occupied_entry = vacant_entry.insert_entry("evening");
+    /// assert_eq!(occupied_entry.key(), &"good");
+    /// assert_eq!(occupied_entry.get(), &"evening");
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[must_use]
     pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, B, N> {
         // SAFETY: invariants are guranteed by the constructor
