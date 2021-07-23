@@ -1,7 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 use core::mem;
 
-use crate::utils::{self, invariant, IterEntries, Slot};
+use crate::utils::{self, invariant, unwrap_unchecked, IterEntries, Slot};
 
 #[derive(Debug)]
 pub struct OccupiedEntry<'a, K: 'a, V: 'a, B, const N: usize> {
@@ -43,9 +43,14 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
 
     #[must_use]
     fn entry(&self) -> (&K, &V) {
-        let (key, value) = &self.entries[self.index].as_ref().unwrap();
+        // SAFETY: invariants are guranteed by the constructor
+        unsafe {
+            debug_assert!(self.index < self.entries.len());
+            debug_assert!(self.entries[self.index].is_some());
 
-        (key, value)
+            let (key, value) = unwrap_unchecked(self.entries.get_unchecked(self.index).as_ref());
+            (key, value)
+        }
     }
 
     #[must_use]
@@ -60,7 +65,13 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
 
     #[must_use]
     pub fn get_mut(&mut self) -> &mut V {
-        &mut self.entries[self.index].as_mut().unwrap().1
+        // SAFETY: invariants are guranteed by the constructor
+        unsafe {
+            debug_assert!(self.index < self.entries.len());
+            debug_assert!(self.entries[self.index].is_some());
+
+            &mut unwrap_unchecked(self.entries.get_unchecked_mut(self.index).as_mut()).1
+        }
     }
 
     pub fn insert(&mut self, mut value: V) -> V {
@@ -71,7 +82,13 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
 
     #[must_use]
     pub fn into_mut(self) -> &'a mut V {
-        &mut self.entries[self.index].as_mut().unwrap().1
+        // SAFETY: invariants are guranteed by the constructor
+        unsafe {
+            debug_assert!(self.index < self.entries.len());
+            debug_assert!(self.entries[self.index].is_some());
+
+            &mut unwrap_unchecked(self.entries.get_unchecked_mut(self.index).as_mut()).1
+        }
     }
 }
 
@@ -111,17 +128,17 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
         debug_assert!(*self.len > 0);
         *self.len -= 1;
 
+        let mut remove_index = self.index;
         if let Some(collision) = self.find_with_hash(self.key()) {
             self.entries.swap(collision, self.index);
 
-            self.entries[collision].take().unwrap()
-        } else {
-            self.entries
-                .get_mut(self.index)
-                //
-                .unwrap()
-                .take()
-                .unwrap()
+            remove_index = collision;
+        }
+
+        // SAFETY: invariants are guarenteed by the constructor
+        unsafe {
+            debug_assert!(remove_index < self.entries.len());
+            unwrap_unchecked(self.entries.get_unchecked_mut(remove_index).take())
         }
     }
 }

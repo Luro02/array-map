@@ -47,6 +47,22 @@ pub(crate) unsafe fn invariant(x: bool) {
     }
 }
 
+/// Converts an `Option<T>` into `T`.
+///
+/// # Safety
+///
+/// the `option` must be `Some(T)`
+#[must_use]
+pub(crate) unsafe fn unwrap_unchecked<T>(option: Option<T>) -> T {
+    debug_assert!(option.is_some());
+
+    if let Some(value) = option {
+        value
+    } else {
+        ::core::hint::unreachable_unchecked()
+    }
+}
+
 pub trait ArrayExt<T, const N: usize> {
     fn enumerate(self) -> [(usize, T); N];
 
