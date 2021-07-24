@@ -1,4 +1,5 @@
 use core::fmt;
+use core::iter::FusedIterator;
 
 use super::IterMut;
 
@@ -28,7 +29,9 @@ impl<'a, K, V> Iterator for ValuesMut<'a, K, V> {
 impl<'a, K: fmt::Debug, V: fmt::Debug> fmt::Debug for ValuesMut<'a, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list()
-            .entries(self.0.iter().flatten().map(|(_, v)| v))
+            .entries(self.0.iter().map(|(_, v)| v))
             .finish()
     }
 }
+
+impl<'a, K, V> FusedIterator for ValuesMut<'a, K, V> {}

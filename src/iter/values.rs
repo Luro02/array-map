@@ -1,4 +1,5 @@
 use core::fmt;
+use core::iter::FusedIterator;
 
 use super::Iter;
 
@@ -36,3 +37,5 @@ impl<'a, K, V> Clone for Values<'a, K, V> {
         Self(self.0.clone())
     }
 }
+
+impl<'a, K, V> FusedIterator for Values<'a, K, V> {}
