@@ -11,7 +11,7 @@ impl<K, V, const N: usize> IntoIter<K, V, N> {
     }
 
     fn iter(&self) -> impl Iterator<Item = &(K, V)> {
-        self.0.as_slice().iter().flat_map(Option::as_ref)
+        self.0.as_slice().iter().filter_map(Option::as_ref)
     }
 
     fn len(&self) -> usize {

@@ -1,5 +1,5 @@
 use core::borrow::Borrow;
-use core::fmt;
+use core::{fmt, mem};
 use core::hash::{BuildHasher, Hash};
 use core::ops::Index;
 
@@ -548,7 +548,7 @@ where
         let mut borrowed: [Option<usize>; N] = [(); N].map(|_| None);
         let qkeys = qkeys.map(|qkey| self.find(qkey).occupied());
 
-        let mut entries = self.entries.each_mut().map(|entry| Some(entry));
+        let mut entries = self.entries.each_mut().map(Some);
 
         qkeys.enumerate().map(|(idx, table_index)| {
             let table_index = table_index.ok_or(UnavailableMutError::Absent)?;
@@ -722,7 +722,7 @@ where
         for (key, value) in IntoIter::new(self.entries) {
             // explicitly ignore the result, because it can not fail (has been checked
             // before the loop)
-            let _ = result.insert(key, value);
+            mem::drop(result.insert(key, value));
         }
 
         Ok(result)
@@ -790,7 +790,7 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let index = self.find(&key).occupied()?;
+        let index = self.find(key).occupied()?;
 
         unsafe {
             Some(OccupiedEntry::new(
@@ -842,9 +842,7 @@ where
     fn occupied_entry_index(&mut self, index: usize) -> Option<OccupiedEntry<'_, K, V, B, N>> {
         debug_assert!(index < self.capacity());
 
-        if self.entries[index].is_none() {
-            return None;
-        }
+        self.entries[index].as_ref()?;
 
         unsafe {
             Some(OccupiedEntry::new(
@@ -1090,7 +1088,7 @@ where
     }
 }
 
-impl<K, V, B, const N: usize> PartialEq<ArrayMap<K, V, N, B>> for ArrayMap<K, V, N, B>
+impl<K, V, B, const N: usize> PartialEq<Self> for ArrayMap<K, V, N, B>
 where
     K: Eq + Hash,
     V: PartialEq,

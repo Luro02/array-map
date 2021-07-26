@@ -8,7 +8,6 @@ pub trait ArrayMapExt<K, V, B: BuildHasher, const N: usize>: Sized
 where
     K: Eq + Hash,
 {
-    #[must_use]
     fn try_flat_map<X, Y, U, F, const M: usize>(
         self,
         f: F,

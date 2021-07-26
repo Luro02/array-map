@@ -66,7 +66,7 @@ where
     K: Eq + Hash,
 {
     fn drop(&mut self) {
-        self.for_each(mem::drop)
+        self.for_each(mem::drop);
     }
 }
 
