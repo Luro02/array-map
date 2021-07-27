@@ -1,6 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 use core::{fmt, mem};
 
+use crate::VacantEntry;
 use crate::utils::{self, IterEntries, MutateOnce, Slot, invariant, unwrap_unchecked};
 
 /// A view into an occupied entry in an `ArrayMap`. It is part of the [`Entry`]
@@ -251,9 +252,19 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     #[allow(clippy::must_use_candidate)]
-    pub fn remove_entry(mut self) -> (K, V) {
+    pub fn remove_entry(self) -> (K, V) {
+        let (vacant, value) = self.remove_entry_helper();
+
+        (vacant.into_key(), value)
+    }
+
+    pub(crate) fn remove_entry_helper(mut self) -> (VacantEntry<'a, K, V, B, N>, V) {
         self.len.mutate(|len| *len -= 1);
 
+        // if two keys have the same hash, they collide.
+        // In linear probing the value will be stored in the next empty spot.
+        // If the value at self.index() is removed one has to move the value of
+        // the next empty spot to the now empty spot.
         let mut remove_index = self.index();
         if let Some(collision) = self.find_with_hash(self.key()) {
             self.entries.swap(collision, remove_index);
@@ -262,10 +273,16 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
         }
 
         // SAFETY: invariants are guarenteed by the constructor
-        unsafe {
+        let (key, value) = unsafe {
             debug_assert!(remove_index < self.entries.len());
             unwrap_unchecked(self.entries.get_unchecked_mut(remove_index).take())
-        }
+        };
+
+        // SAFETY: remove_index is valid, because of the previous statement, all the other invariants have not changed
+        let vacant_entry = unsafe {
+            VacantEntry::new(key, self.entries, remove_index, self.build_hasher, self.len.into_mut())
+        };
+        (vacant_entry, value)
     }
 }
 

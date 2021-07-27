@@ -234,6 +234,32 @@ impl<'a, K: Hash, V: Default, B: BuildHasher, const N: usize> Entry<'a, K, V, B,
     }
 }
 
+impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
+    /// Ensures that no value is associated with the key and returns a `VacantEntry`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use array_map::ArrayMap;
+    ///
+    /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
+    ///
+    /// let vacant_entry = map.entry("good")?.remove_entry();
+    ///
+    /// let key = vacant_entry.into_key();
+    /// assert_eq!(key, "good");
+    /// assert_eq!(map.contains_key(&key), false);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    #[must_use = "directly call ArrayMap::remove if you dont use the VacantEntry"]
+    pub fn remove_entry(self) -> VacantEntry<'a, K, V, B, N> {
+        match self {
+            Self::Occupied(entry) => entry.remove_entry_helper().0,
+            Self::Vacant(entry) => entry,
+        }
+    }
+}
+
 impl<'a, K, V, const N: usize, B> From<OccupiedEntry<'a, K, V, B, N>> for Entry<'a, K, V, B, N>
 where
     B: BuildHasher,

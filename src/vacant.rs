@@ -62,13 +62,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
     ///
-    /// let vacant_entry = {
-    ///     if let Entry::Vacant(vacant) = map.entry("good")? {
-    ///         vacant
-    ///     } else {
-    ///         unreachable!()
-    ///     }
-    /// };
+    /// let vacant_entry = map.entry("good")?.remove_entry();
     ///
     /// assert_eq!(vacant_entry.key(), &"good");
     /// # Ok::<_, array_map::CapacityError>(())
@@ -88,13 +82,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
     ///
-    /// let vacant_entry = {
-    ///     if let Entry::Vacant(vacant) = map.entry("good")? {
-    ///         vacant
-    ///     } else {
-    ///         unreachable!()
-    ///     }
-    /// };
+    /// let vacant_entry = map.entry("good")?.remove_entry();
     ///
     /// assert_eq!(vacant_entry.insert("morning"), &mut "morning");
     /// assert_eq!(map.get("good"), Some(&"morning"));
@@ -120,13 +108,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
     ///
-    /// let vacant_entry = {
-    ///     if let Entry::Vacant(vacant) = map.entry("good")? {
-    ///         vacant
-    ///     } else {
-    ///         unreachable!()
-    ///     }
-    /// };
+    /// let vacant_entry = map.entry("good")?.remove_entry();
     ///
     /// let key = vacant_entry.into_key();
     /// assert_eq!(key, "good");
@@ -147,13 +129,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
     ///
-    /// let vacant_entry = {
-    ///     if let Entry::Vacant(vacant) = map.entry("good")? {
-    ///         vacant
-    ///     } else {
-    ///         unreachable!()
-    ///     }
-    /// };
+    /// let vacant_entry = map.entry("good")?.remove_entry();
     ///
     /// let occupied_entry = vacant_entry.insert_entry("evening");
     /// assert_eq!(occupied_entry.key(), &"good");
