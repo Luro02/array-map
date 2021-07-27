@@ -1,7 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 use core::{fmt, mem};
 
-use crate::utils::{self, invariant, unwrap_unchecked, IterEntries, Slot};
+use crate::utils::{self, IterEntries, MutateOnce, Slot, invariant, unwrap_unchecked};
 
 /// A view into an occupied entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.
@@ -11,7 +11,7 @@ pub struct OccupiedEntry<'a, K: 'a, V: 'a, B, const N: usize> {
     entries: &'a mut [Option<(K, V)>; N],
     index: usize,
     build_hasher: &'a B,
-    len: &'a mut usize,
+    len: MutateOnce<'a, usize>,
 }
 
 impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
@@ -40,18 +40,24 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
             entries,
             index,
             build_hasher,
-            len,
+            len: MutateOnce::new(len),
         }
+    }
+
+    #[inline]
+    #[must_use]
+    fn index(&self) -> usize {
+        self.index
     }
 
     #[must_use]
     fn entry(&self) -> (&K, &V) {
         // SAFETY: invariants are guranteed by the constructor
         unsafe {
-            debug_assert!(self.index < self.entries.len());
-            debug_assert!(self.entries[self.index].is_some());
+            debug_assert!(self.index() < self.entries.len());
+            debug_assert!(self.entries[self.index()].is_some());
 
-            let (key, value) = unwrap_unchecked(self.entries.get_unchecked(self.index).as_ref());
+            let (key, value) = unwrap_unchecked(self.entries.get_unchecked(self.index()).as_ref());
             (key, value)
         }
     }
@@ -115,10 +121,11 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     pub fn get_mut(&mut self) -> &mut V {
         // SAFETY: invariants are guranteed by the constructor
         unsafe {
-            debug_assert!(self.index < self.entries.len());
-            debug_assert!(self.entries[self.index].is_some());
+            debug_assert!(self.index() < self.entries.len());
+            debug_assert!(self.entries[self.index()].is_some());
+            let index = self.index();
 
-            &mut unwrap_unchecked(self.entries.get_unchecked_mut(self.index).as_mut()).1
+            &mut unwrap_unchecked(self.entries.get_unchecked_mut(index).as_mut()).1
         }
     }
 
@@ -244,13 +251,12 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     #[allow(clippy::must_use_candidate)]
-    pub fn remove_entry(self) -> (K, V) {
-        debug_assert!(*self.len > 0);
-        *self.len -= 1;
+    pub fn remove_entry(mut self) -> (K, V) {
+        self.len.mutate(|len| *len -= 1);
 
-        let mut remove_index = self.index;
+        let mut remove_index = self.index();
         if let Some(collision) = self.find_with_hash(self.key()) {
-            self.entries.swap(collision, self.index);
+            self.entries.swap(collision, remove_index);
 
             remove_index = collision;
         }

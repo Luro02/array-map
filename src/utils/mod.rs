@@ -1,8 +1,10 @@
 mod iter_circular;
 mod iter_entries;
+mod mutate_once;
 
 pub(crate) use iter_circular::*;
 pub(crate) use iter_entries::*;
+pub(crate) use mutate_once::*;
 
 use core::borrow::Borrow;
 use core::hash::{BuildHasher, Hash, Hasher};
