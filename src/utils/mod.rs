@@ -90,7 +90,7 @@ impl<T, const N: usize> ArrayExt<T, N> for [T; N] {
         F: FnMut(T) -> X,
     {
         let mut array: [MaybeUninit<U>; N] = MaybeUninit::uninit_array();
-        let mut iterator = self.into_iter();
+        let mut iterator = core::array::IntoIter::new(self);
 
         for item in array.iter_mut() {
             // NOTE: it is guranteed that this will not panic
