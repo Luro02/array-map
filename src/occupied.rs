@@ -1,8 +1,8 @@
 use core::hash::{BuildHasher, Hash};
 use core::{fmt, mem};
 
+use crate::utils::{self, invariant, unwrap_unchecked, IterEntries, MutateOnce, Slot};
 use crate::VacantEntry;
-use crate::utils::{self, IterEntries, MutateOnce, Slot, invariant, unwrap_unchecked};
 
 /// A view into an occupied entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.
@@ -194,18 +194,43 @@ trait DoubleEndedIteratorExt: DoubleEndedIterator {
 impl<D: DoubleEndedIterator> DoubleEndedIteratorExt for D {}
 
 impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
-    fn find_with_hash(&self, key: &K) -> Option<usize> {
-        let hash = utils::make_hash::<K, K, B>(self.build_hasher, key);
+    fn find_with_hash(&self, key: &K, index_to_remove: usize) -> Option<usize> {
+        let expected_hash = utils::make_hash::<K, K, B>(self.build_hasher, key);
 
-        IterEntries::new(hash, self.entries, utils::key_hasher(self.build_hasher)).rfind_map(
-            |slot| {
-                if let Slot::Collision { index, .. } = slot {
-                    Some(index)
-                } else {
-                    None
+        let entries = IterEntries::new_with_start(
+            index_to_remove,
+            expected_hash,
+            self.entries,
+            utils::key_hasher(self.build_hasher),
+        );
+
+        let mut last_collision = None;
+        // search until you found a vacant slot or reached the end of the table
+        for slot in entries {
+            // TODO: replace with something smarter (dont generate the entries in the first
+            //       place)
+            if (index_to_remove..=utils::adjust_hash::<N>(expected_hash)).contains(&slot.index()) {
+                continue;
+            }
+
+            match slot {
+                Slot::Collision { index, .. } => {
+                    last_collision = Some(index);
                 }
-            },
-        )
+                Slot::Occupied { index, hash, .. } => {
+                    let expected_index = utils::adjust_hash::<N>(hash);
+
+                    // check if one can even move the entry to key_index:
+                    if index_to_remove >= expected_index && index != expected_index {
+                        last_collision = Some(index);
+                    }
+                }
+                Slot::Vacant { .. } => {
+                    break;
+                }
+            }
+        }
+        last_collision
     }
 
     /// Removes the key value pair stored in the map for this entry and returns
@@ -261,26 +286,29 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
     pub(crate) fn remove_entry_helper(mut self) -> (VacantEntry<'a, K, V, B, N>, V) {
         self.len.mutate(|len| *len -= 1);
 
-        // if two keys have the same hash, they collide.
-        // In linear probing the value will be stored in the next empty spot.
-        // If the value at self.index() is removed one has to move the value of
-        // the next empty spot to the now empty spot.
         let mut remove_index = self.index();
-        if let Some(collision) = self.find_with_hash(self.key()) {
-            self.entries.swap(collision, remove_index);
-
-            remove_index = collision;
+        if let Some(idx) = self.find_with_hash(self.key(), self.index()) {
+            remove_index = idx;
+            let index = self.index();
+            self.entries.swap(index, remove_index); // TODO: remove panic!
         }
 
         // SAFETY: invariants are guarenteed by the constructor
         let (key, value) = unsafe {
-            debug_assert!(remove_index < self.entries.len());
+            debug_assert!(self.index() < self.entries.len());
             unwrap_unchecked(self.entries.get_unchecked_mut(remove_index).take())
         };
 
-        // SAFETY: remove_index is valid, because of the previous statement, all the other invariants have not changed
+        // SAFETY: remove_index is valid, because of the previous statement, all the
+        // other invariants have not changed
         let vacant_entry = unsafe {
-            VacantEntry::new(key, self.entries, remove_index, self.build_hasher, self.len.into_mut())
+            VacantEntry::new(
+                key,
+                self.entries,
+                remove_index,
+                self.build_hasher,
+                self.len.into_mut(),
+            )
         };
         (vacant_entry, value)
     }

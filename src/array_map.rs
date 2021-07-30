@@ -1,7 +1,7 @@
 use core::borrow::Borrow;
-use core::{fmt, mem};
 use core::hash::{BuildHasher, Hash};
 use core::ops::Index;
+use core::{fmt, mem};
 
 use crate::entry::Entry;
 use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
@@ -826,6 +826,7 @@ where
             if let Slot::Collision {
                 index,
                 entry: (key, _),
+                ..
             } = slot
             {
                 if key.borrow() == qkey {
@@ -1164,6 +1165,8 @@ where
 
 #[cfg(all(test, feature = "ahash"))]
 mod tests {
+    use crate::array_map;
+
     use super::*;
     use pretty_assertions::assert_eq;
 
@@ -1194,6 +1197,276 @@ mod tests {
                 Ok((&"baz", &mut 20)),
                 Err(UnavailableMutError::Duplicate(1)),
                 Err(UnavailableMutError::Absent),
+            ]
+        );
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
+    struct HasHash(u64, u64);
+
+    impl core::hash::Hash for HasHash {
+        fn hash<H>(&self, h: &mut H)
+        where
+            H: core::hash::Hasher,
+        {
+            h.write_u64(self.0);
+        }
+    }
+
+    #[derive(Default)]
+    struct Hasher(u64);
+
+    impl core::hash::Hasher for Hasher {
+        fn finish(&self) -> u64 {
+            self.0
+        }
+
+        fn write(&mut self, _: &[u8]) {
+            unimplemented!()
+        }
+
+        fn write_u64(&mut self, value: u64) {
+            self.0 = value;
+        }
+    }
+
+    #[test]
+    fn test_remove_shift_with_smaller_hash() {
+        let mut map: ArrayMap<HasHash, usize, 5, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(0, 0) => 0,
+            HasHash(1, 0) => 1,
+            HasHash(2, 0) => 2,
+            HasHash(0, 1) => 3,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.entries,
+            [
+                Some((HasHash(0, 0), 0)),
+                Some((HasHash(1, 0), 1)),
+                Some((HasHash(2, 0), 2)),
+                Some((HasHash(0, 1), 3)),
+                None,
+            ]
+        );
+
+        assert!(map.contains_key(&HasHash(0, 1)));
+        assert_eq!(map.remove(&HasHash(1, 0)), Some(1));
+        assert_eq!(
+            map.entries,
+            [
+                Some((HasHash(0, 0), 0)),
+                Some((HasHash(0, 1), 3)),
+                Some((HasHash(2, 0), 2)),
+                None,
+                None,
+            ]
+        );
+        assert!(map.contains_key(&HasHash(0, 1)));
+    }
+
+    #[test]
+    fn test_linear_probing_move_after_remove() {
+        let mut map: ArrayMap<HasHash, usize, 2, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(1, 1) => 1,
+            HasHash(0, 0) => 0,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.entries,
+            [
+                //
+                Some((HasHash(0, 0), 0)),
+                Some((HasHash(1, 1), 1)),
+            ]
+        );
+
+        assert_eq!(map.remove(&HasHash(1, 1)), Some(1));
+        assert_eq!(
+            map.entries,
+            [
+                //
+                Some((HasHash(0, 0), 0)),
+                None,
+            ]
+        );
+
+        assert!(map.contains_key(&HasHash(0, 0)));
+    }
+
+    #[test]
+    fn test_linear_probing_swap_after_remove() {
+        let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(1, 1) => 1,
+            HasHash(0, 2) => 0,
+            HasHash(0, 0) => 2,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.entries,
+            [
+                Some((HasHash(0, 2), 0)), // 0
+                Some((HasHash(1, 1), 1)), // 1
+                Some((HasHash(0, 0), 2)), // 2
+                None,
+            ]
+        );
+
+        assert_eq!(map.remove(&HasHash(0, 2)), Some(0));
+        assert_eq!(
+            map.entries,
+            [
+                //
+                Some((HasHash(0, 0), 2)),
+                Some((HasHash(1, 1), 1)),
+                None,
+                None,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_linear_probing_remove_no_move() {
+        let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(1, 1) => 1,
+            HasHash(0, 2) => 0,
+            HasHash(0, 0) => 2,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.entries,
+            [
+                Some((HasHash(0, 2), 0)), // 0
+                Some((HasHash(1, 1), 1)), // 1
+                Some((HasHash(0, 0), 2)), // 2
+                None,
+            ]
+        );
+
+        assert_eq!(map.remove(&HasHash(0, 0)), Some(2));
+        assert_eq!(
+            map.entries,
+            [
+                //
+                Some((HasHash(0, 2), 0)),
+                Some((HasHash(1, 1), 1)),
+                None,
+                None,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_fuzzer_failure_00() {
+        let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(1, 1) => 0,
+            HasHash(0, 1) => 1,
+            HasHash(0, 0) => 2,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.entries,
+            [
+                Some((HasHash(0, 1), 1)), // 0
+                Some((HasHash(1, 1), 0)), // 1
+                Some((HasHash(0, 0), 2)), // 2
+                None,
+            ]
+        );
+
+        assert_eq!(map.remove(&HasHash(1, 1)), Some(0));
+
+        assert_eq!(
+            map.entries,
+            [
+                Some((HasHash(0, 1), 1)), // 0
+                Some((HasHash(0, 0), 2)), // 2
+                None,
+                None,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_fuzzer_failure_01() {
+        let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(3, 1) => 0,
+            HasHash(2, 1) => 1,
+            HasHash(2, 0) => 2,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.entries,
+            [
+                Some((HasHash(2, 0), 2)), // 0
+                None,                     // 1
+                Some((HasHash(2, 1), 1)), // 2
+                Some((HasHash(3, 1), 0)), // 3
+            ]
+        );
+
+        assert_eq!(map.remove(&HasHash(3, 1)), Some(0));
+
+        assert_eq!(
+            map.entries,
+            [
+                None,                     // 0
+                None,                     // 1
+                Some((HasHash(2, 1), 1)), // 2
+                Some((HasHash(2, 0), 2)), // 3
+            ]
+        );
+    }
+
+    #[test]
+    #[ignore = "linear probing is broken in it's current implementation (to be fixed)"]
+    fn test_fuzzer_failure_02() {
+        let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(2, 0) => 0,
+            HasHash(2, 1) => 1,
+            HasHash(3, 2) => 2,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.entries,
+            [
+                Some((HasHash(3, 2), 2)), // 0
+                None,                     // 1
+                Some((HasHash(2, 0), 0)), // 2
+                Some((HasHash(2, 1), 1)), // 3
+            ]
+        );
+
+        assert_eq!(map.remove(&HasHash(2, 0)), Some(0));
+
+        assert_eq!(
+            map.entries,
+            [
+                None,                     // 0
+                None,                     // 1
+                Some((HasHash(2, 1), 1)), // 2
+                Some((HasHash(3, 2), 2)), // 3
             ]
         );
     }
