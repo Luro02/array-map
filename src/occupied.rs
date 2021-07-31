@@ -1,8 +1,8 @@
 use core::hash::{BuildHasher, Hash};
 use core::{fmt, mem};
 
-use crate::utils::{self, invariant, unwrap_unchecked, IterEntries, MutateOnce, Slot};
-use crate::VacantEntry;
+use crate::utils::{self, unwrap_unchecked, IterEntries, MutateOnce, Slot};
+use crate::{invariant, VacantEntry};
 
 /// A view into an occupied entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.
@@ -32,10 +32,10 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
         build_hasher: &'a B,
         len: &'a mut usize,
     ) -> Self {
-        invariant(entries.len() == N);
-        invariant(index < N);
-        invariant(entries[index].is_some());
-        invariant(*len > 0 && *len <= N);
+        invariant!(entries.len() == N);
+        invariant!(index < N);
+        invariant!(entries[index].is_some());
+        invariant!(*len > 0 && *len <= N);
 
         Self {
             entries,

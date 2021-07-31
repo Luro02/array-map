@@ -36,16 +36,83 @@ where
     move |(k, _)| make_hash::<K, K, B>(build_hasher, k)
 }
 
+#[doc(hidden)]
+#[macro_export]
+#[cfg(debug_assertions)]
+macro_rules! unreachable_unchecked {
+    () => {
+        ::core::unreachable!()
+    };
+    ($msg:expr $(,)?) => { ::core::unreachable!($msg) };
+    ($fmt:expr, $($arg:tt)*) => { ::core::unreachable!($fmt, $($arg)*) };
+}
+
+#[doc(hidden)]
+#[macro_export]
+#[cfg(not(debug_assertions))]
+macro_rules! unreachable_unchecked {
+    () => {
+        ::core::hint::unreachable_unchecked()
+    };
+    ($msg:expr $(,)?) => {
+        ::core::hint::unreachable_unchecked()
+    };
+    ($fmt:expr, $($arg:tt)*) => {
+        ::core::hint::unreachable_unchecked()
+    };
+}
+
 /// Asserts that `x` is always `true`.
 ///
 /// # Safety
 ///
 /// `x` must be `true`
-pub(crate) unsafe fn invariant(x: bool) {
-    debug_assert!(x, "invariant does not hold");
-    if !x {
-        ::core::hint::unreachable_unchecked()
+#[macro_export]
+macro_rules! invariant {
+    ($x:expr) => {{
+        if !($x) {
+            $crate::unreachable_unchecked!();
+        }
+    }};
+}
+
+#[cfg(not(feature = "nightly"))]
+#[cold]
+#[inline]
+fn cold() {}
+
+#[inline]
+#[must_use]
+#[cfg(feature = "nightly")]
+pub(crate) fn likely(b: bool) -> bool {
+    ::core::intrinsics::likely(b)
+}
+
+#[inline]
+#[must_use]
+#[cfg(feature = "nightly")]
+pub(crate) fn unlikely(b: bool) -> bool {
+    ::core::intrinsics::unlikely(b)
+}
+
+#[inline]
+#[must_use]
+#[cfg(not(feature = "nightly"))]
+pub(crate) fn likely(b: bool) -> bool {
+    if !b {
+        cold()
     }
+    b
+}
+
+#[inline]
+#[must_use]
+#[cfg(not(feature = "nightly"))]
+pub(crate) fn unlikely(b: bool) -> bool {
+    if b {
+        cold()
+    }
+    b
 }
 
 /// Converts an `Option<T>` into `T`.
@@ -55,12 +122,10 @@ pub(crate) unsafe fn invariant(x: bool) {
 /// the `option` must be `Some(T)`
 #[must_use]
 pub(crate) unsafe fn unwrap_unchecked<T>(option: Option<T>) -> T {
-    debug_assert!(option.is_some());
-
     if let Some(value) = option {
         value
     } else {
-        ::core::hint::unreachable_unchecked()
+        unreachable_unchecked!()
     }
 }
 

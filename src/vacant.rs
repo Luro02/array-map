@@ -1,8 +1,8 @@
 use core::fmt;
 use core::hash::BuildHasher;
 
-use crate::utils::{MutateOnce, invariant, unwrap_unchecked};
-use crate::OccupiedEntry;
+use crate::utils::{unwrap_unchecked, MutateOnce};
+use crate::{invariant, OccupiedEntry};
 
 /// A view into a vacant entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.
@@ -36,13 +36,13 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
     ) -> Self {
         // SAFETY: this assumption should be guranteed by the compiler (length is
         //         encoded in the type)
-        invariant(entries.len() == N);
+        invariant!(entries.len() == N);
         // SAFETY: index must be valid
-        invariant(index < N);
+        invariant!(index < N);
         // SAFETY: a `VacantEntry` should be vacant
-        invariant(entries[index].is_none());
+        invariant!(entries[index].is_none());
         // SAFETY: length should be smaller than N
-        invariant(*len <= N);
+        invariant!(*len <= N);
 
         Self {
             key,
@@ -144,7 +144,12 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
             *self.entries.get_unchecked_mut(self.index) = Some((self.key, value));
             self.len.mutate(|len| *len += 1);
 
-            OccupiedEntry::new(self.entries, self.index, self.build_hasher, self.len.into_mut())
+            OccupiedEntry::new(
+                self.entries,
+                self.index,
+                self.build_hasher,
+                self.len.into_mut(),
+            )
         }
     }
 }

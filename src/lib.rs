@@ -8,6 +8,7 @@
     try_trait_v2,
     stmt_expr_attributes
 )]
+#![cfg_attr(feature = "nightly", feature(core_intrinsics))]
 #![warn(clippy::nursery, clippy::pedantic)]
 #![allow(
     clippy::module_name_repetitions,
