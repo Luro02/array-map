@@ -6,9 +6,10 @@ use core::{fmt, mem};
 use crate::entry::Entry;
 use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::ext::{TryExtend, TryFromIterator};
-use crate::iter::{Drain, DrainFilter, IntoIter, Iter, IterMut, Keys, Values, ValuesMut};
+use crate::iter::{Drain, DrainFilter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
-use crate::utils::{self, ArrayExt, IterEntries, Slot};
+use crate::raw::{ArrayTable, RawTable};
+use crate::utils;
 use crate::vacant::VacantEntry;
 
 /// Default hasher for [`ArrayMap`].
@@ -20,9 +21,8 @@ pub enum DefaultHashBuilder {}
 
 #[derive(Copy, Clone)]
 pub struct ArrayMap<K, V, const N: usize, B = DefaultHashBuilder> {
-    entries: [Option<(K, V)>; N],
+    table: ArrayTable<(K, V), N>,
     build_hasher: B,
-    len: usize,
 }
 
 #[cfg(feature = "ahash")]
@@ -81,9 +81,8 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     #[doc(alias("with_hasher"))]
     pub fn with_build_hasher(build_hasher: B) -> Self {
         Self {
-            entries: [(); N].map(|_| None),
+            table: ArrayTable::default(),
             build_hasher,
-            len: 0,
         }
     }
 
@@ -123,7 +122,7 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     /// ```
     #[must_use]
     pub fn len(&self) -> usize {
-        self.len
+        self.table.len()
     }
 
     /// Returns `true` if the map contains no elements.
@@ -165,22 +164,6 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     }
 }
 
-#[must_use]
-enum FindResult<T> {
-    Vacant(T),
-    Occupied(T),
-    End,
-}
-
-impl<T> FindResult<T> {
-    pub fn occupied(self) -> Option<T> {
-        match self {
-            Self::Occupied(value) => Some(value),
-            Self::End | Self::Vacant(_) => None,
-        }
-    }
-}
-
 impl<K, V, B, const N: usize> ArrayMap<K, V, N, B>
 where
     K: Eq + Hash,
@@ -210,26 +193,28 @@ where
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     pub fn entry(&mut self, key: K) -> Result<Entry<'_, K, V, B, N>, CapacityError> {
-        match self.find(&key) {
-            FindResult::Occupied(index) => unsafe {
+        let hash = utils::make_hash::<K, K, B>(&self.build_hasher, &key);
+
+        if let Some(ident) = self.table.find(hash, |(k, _)| k.eq(&key)) {
+            unsafe {
                 Ok(Entry::Occupied(OccupiedEntry::new(
-                    &mut self.entries,
-                    index,
+                    &mut self.table,
+                    ident,
                     &self.build_hasher,
-                    &mut self.len,
                 )))
-            },
-            FindResult::Vacant(index) => unsafe {
-                Ok(Entry::Vacant(VacantEntry::new(
-                    key,
-                    &mut self.entries,
-                    index,
-                    &self.build_hasher,
-                    &mut self.len,
-                )))
-            },
-            FindResult::End => Err(CapacityError), /* TODO: when and why does this happen???
-                                                    * (document) */
+            }
+        } else {
+            if self.table.len() == self.table.capacity() {
+                Err(CapacityError)
+            } else {
+                unsafe {
+                    Ok(Entry::Vacant(VacantEntry::new(
+                        &mut self.table,
+                        key,
+                        &self.build_hasher,
+                    )))
+                }
+            }
         }
     }
 
@@ -349,7 +334,7 @@ where
     /// assert_eq!(map.is_empty(), true);
     /// ```
     pub fn clear(&mut self) {
-        self.drain();
+        self.table.clear();
     }
 
     /// Returns `true` if the map contains a value for the specified key.
@@ -401,9 +386,10 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let index = self.find(key).occupied()?;
-
-        self.entries[index].as_ref().map(|(k, v)| (k, v))
+        let hash = utils::make_hash::<K, Q, B>(&self.build_hasher, key);
+        self.table
+            .get(hash, |(k, _)| key.eq(k.borrow()))
+            .map(|(k, v)| (k, v))
     }
 
     /// Returns the key-value pair corresponding to the supplied key.
@@ -433,9 +419,9 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let index = self.find(key).occupied()?;
+        let hash = utils::make_hash::<K, Q, B>(&self.build_hasher, key);
 
-        match self.entries[index].as_mut() {
+        match self.table.get_mut(hash, move |(k, _)| key.eq(k.borrow())) {
             Some((k, v)) => Some((k, v)),
             None => None,
         }
@@ -465,7 +451,17 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        Some(self.occupied_entry(qkey)?.remove_entry())
+        let hash = utils::make_hash::<K, Q, B>(&self.build_hasher, &qkey);
+        unsafe {
+            if let Some(ident) = self.table.find(hash, |(k, _)| qkey.eq(k.borrow())) {
+                let entry = self
+                    .table
+                    .remove(ident, utils::key_hasher(&self.build_hasher));
+                Some(entry)
+            } else {
+                None
+            }
+        }
     }
 
     /// Removes a key from the map, returning the value at the key if the key
@@ -543,25 +539,15 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        // if an entry is already borrowed then an index will be present, which points
-        // to the mutable reference in the resulting array
-        let mut borrowed: [Option<usize>; N] = [(); N].map(|_| None);
-        let qkeys = qkeys.map(|qkey| self.find(qkey).occupied());
-
-        let mut entries = self.entries.each_mut().map(Some);
-
-        qkeys.enumerate().map(|(idx, table_index)| {
-            let table_index = table_index.ok_or(UnavailableMutError::Absent)?;
-
-            if let Some(Some((key, value))) = entries[table_index].take() {
-                borrowed[table_index] = Some(idx);
+        self.table
+            .get_each_mut(
+                qkeys.map(|key| utils::make_hash::<K, Q, B>(&self.build_hasher, key)),
+                |index, (key, _)| qkeys[index].eq(key.borrow()),
+            )
+            .map(|entry| {
+                let (key, value) = entry?;
                 Ok((&*key, value))
-            } else if let Some(idx) = borrowed[table_index] {
-                Err(UnavailableMutError::Duplicate(idx))
-            } else {
-                unreachable!("the entry should be present in entries or an entry in borrowed must be present")
-            }
-        })
+            })
     }
 
     /// Attempts to get mutable references to `N` values in the map at once.
@@ -654,7 +640,7 @@ where
     where
         F: FnMut(&K, &mut V) -> bool,
     {
-        DrainFilter::new(f, self)
+        DrainFilter::new(f, &mut self.table, &self.build_hasher)
     }
 
     /// Clears the map, returning all key-value pairs as an iterator.
@@ -684,7 +670,7 @@ where
     /// );
     /// ```
     pub fn drain(&mut self) -> Drain<'_, K, V, B, N> {
-        Drain::new(self)
+        Drain::new(&mut self.table, &self.build_hasher)
     }
 
     /// Tries to convert the map with capacity `N` into a map with capacity `M`.
@@ -712,14 +698,16 @@ where
     /// assert_eq!(rescaled.get(&'a'), Some(&('a' as u32)));
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn try_rescale<const M: usize>(self) -> Result<ArrayMap<K, V, M, B>, RescaleError<N, M>> {
+    pub fn try_rescale<const M: usize>(
+        mut self,
+    ) -> Result<ArrayMap<K, V, M, B>, RescaleError<N, M>> {
         if self.len() >= M {
             return Err(RescaleError::new(self.len()));
         }
 
         let mut result = ArrayMap::with_build_hasher(self.build_hasher);
 
-        for (key, value) in IntoIter::new(self.entries) {
+        for (key, value) in self.table.drain() {
             // explicitly ignore the result, because it can not fail (has been checked
             // before the loop)
             mem::drop(result.insert(key, value));
@@ -768,108 +756,8 @@ where
         self.drain_filter(|key, value| !(f(key, value)));
     }
 
-    pub(crate) fn into_parts(self) -> (B, IntoIter<K, V, N>) {
-        (self.build_hasher, IntoIter::new(self.entries))
-    }
-}
-
-impl<K, V, B, const N: usize> ArrayMap<K, V, N, B>
-where
-    K: Eq + Hash,
-    B: BuildHasher,
-{
-    // Returns an occupied entry if the key is present in the map or None if it is
-    // not.
-    //
-    // This function is more generic than `Self::entry`, because a vacant entry
-    // needs to store the key that is passed to the function, but a key with
-    // type &Q can not be converted to a key of type K, which is required for the
-    // vacant entry!
-    fn occupied_entry<Q: ?Sized>(&mut self, key: &Q) -> Option<OccupiedEntry<'_, K, V, B, N>>
-    where
-        K: Borrow<Q>,
-        Q: Hash + Eq,
-    {
-        let index = self.find(key).occupied()?;
-
-        unsafe {
-            Some(OccupiedEntry::new(
-                &mut self.entries,
-                index,
-                &self.build_hasher,
-                &mut self.len,
-            ))
-        }
-    }
-
-    fn iter_from<Q: ?Sized>(
-        &self,
-        key: &Q,
-    ) -> IterEntries<'_, (K, V), impl FnMut(&(K, V)) -> u64 + '_, N>
-    where
-        Q: Hash + Eq,
-        K: Borrow<Q>,
-    {
-        IterEntries::new(
-            utils::make_hash::<K, Q, B>(&self.build_hasher, key),
-            &self.entries,
-            utils::key_hasher(&self.build_hasher),
-        )
-    }
-
-    fn find<Q: ?Sized>(&self, qkey: &Q) -> FindResult<usize>
-    where
-        Q: Hash + Eq,
-        K: Borrow<Q>,
-    {
-        for slot in self.iter_from(qkey) {
-            if let Slot::Collision {
-                index,
-                entry: (key, _),
-                ..
-            } = slot
-            {
-                if key.borrow() == qkey {
-                    return FindResult::Occupied(index);
-                }
-            } else if let Slot::Vacant { index } = slot {
-                return FindResult::Vacant(index);
-            }
-        }
-
-        FindResult::End
-    }
-
-    fn occupied_entry_index(&mut self, index: usize) -> Option<OccupiedEntry<'_, K, V, B, N>> {
-        debug_assert!(index < self.capacity());
-
-        self.entries[index].as_ref()?;
-
-        unsafe {
-            Some(OccupiedEntry::new(
-                &mut self.entries,
-                index,
-                &self.build_hasher,
-                &mut self.len,
-            ))
-        }
-    }
-
-    pub(crate) fn remove_entry_index(&mut self, index: usize) -> Option<(K, V)> {
-        debug_assert!(index < self.capacity());
-
-        Some(self.occupied_entry_index(index)?.remove_entry())
-    }
-
-    pub(crate) fn get_key_value_mut_index(&mut self, index: usize) -> Option<(&K, &mut V)> {
-        if index >= N {
-            return None;
-        }
-
-        match self.entries[index].as_mut() {
-            Some((k, v)) => Some((k, v)),
-            None => None,
-        }
+    pub(crate) fn into_parts(self) -> (B, <ArrayTable<(K, V), N> as IntoIterator>::IntoIter) {
+        (self.build_hasher, self.table.into_iter())
     }
 }
 
@@ -902,8 +790,8 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// );
     /// # Ok::<_, CollectArrayError>(())
     /// ```
-    pub fn iter(&self) -> Iter<'_, K, V> {
-        Iter::new(&self.entries)
+    pub fn iter(&self) -> Iter<'_, K, V, ArrayTable<(K, V), N>> {
+        Iter::new(&self.table)
     }
 
     /// Returns an iterator iterating over the mutable entries of the map.
@@ -936,8 +824,8 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     ///     }
     /// );
     /// ```
-    pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
-        IterMut::new(&mut self.entries)
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V, ArrayTable<(K, V), N>> {
+        IterMut::new(&mut self.table)
     }
 
     /// An iterator visiting all keys in arbitrary order.
@@ -962,7 +850,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// assert_eq!(keys, [&"good bye", &"good night", &"hello",]);
     /// # Ok::<_, CollectArrayError>(())
     /// ```
-    pub fn keys(&self) -> Keys<'_, K, V> {
+    pub fn keys(&self) -> Keys<'_, K, V, ArrayTable<(K, V), N>> {
         Keys::new(self.iter())
     }
 
@@ -988,7 +876,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// assert_eq!(values, [&"au revoir", &"bonne nuit", &"salut",]);
     /// # Ok::<_, CollectArrayError>(())
     /// ```
-    pub fn values(&self) -> Values<'_, K, V> {
+    pub fn values(&self) -> Values<'_, K, V, ArrayTable<(K, V), N>> {
         Values::new(self.iter())
     }
 
@@ -1023,7 +911,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     ///     }
     /// );
     /// ```
-    pub fn values_mut(&mut self) -> ValuesMut<'_, K, V> {
+    pub fn values_mut(&mut self) -> ValuesMut<'_, K, V, ArrayTable<(K, V), N>> {
         ValuesMut::new(self.iter_mut())
     }
 }
@@ -1047,7 +935,7 @@ where
 }
 
 impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a ArrayMap<K, V, N, B> {
-    type IntoIter = Iter<'a, K, V>;
+    type IntoIter = Iter<'a, K, V, ArrayTable<(K, V), N>>;
     type Item = (&'a K, &'a V);
 
     fn into_iter(self) -> Self::IntoIter {
@@ -1056,7 +944,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a ArrayMap<K, 
 }
 
 impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a mut ArrayMap<K, V, N, B> {
-    type IntoIter = IterMut<'a, K, V>;
+    type IntoIter = IterMut<'a, K, V, ArrayTable<(K, V), N>>;
     type Item = (&'a K, &'a mut V);
 
     fn into_iter(self) -> Self::IntoIter {
@@ -1065,11 +953,11 @@ impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a mut ArrayMap
 }
 
 impl<K, V, B: BuildHasher, const N: usize> IntoIterator for ArrayMap<K, V, N, B> {
-    type IntoIter = IntoIter<K, V, N>;
+    type IntoIter = <ArrayTable<(K, V), N> as IntoIterator>::IntoIter;
     type Item = (K, V);
 
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter::new(self.entries)
+        self.table.into_iter()
     }
 }
 
@@ -1201,7 +1089,7 @@ mod tests {
         );
     }
 
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(PartialEq, Eq)]
     struct HasHash(u64, u64);
 
     impl core::hash::Hash for HasHash {
@@ -1210,6 +1098,11 @@ mod tests {
             H: core::hash::Hasher,
         {
             h.write_u64(self.0);
+        }
+    }
+    impl fmt::Debug for HasHash {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "HasHash({}, {})", self.0, self.1)
         }
     }
 
@@ -1243,27 +1136,27 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 Some((HasHash(0, 0), 0)),
                 Some((HasHash(1, 0), 1)),
                 Some((HasHash(2, 0), 2)),
                 Some((HasHash(0, 1), 3)),
                 None,
-            ]
+            ])
         );
 
         assert!(map.contains_key(&HasHash(0, 1)));
         assert_eq!(map.remove(&HasHash(1, 0)), Some(1));
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 Some((HasHash(0, 0), 0)),
                 Some((HasHash(0, 1), 3)),
                 Some((HasHash(2, 0), 2)),
                 None,
                 None,
-            ]
+            ])
         );
         assert!(map.contains_key(&HasHash(0, 1)));
     }
@@ -1279,22 +1172,22 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 //
                 Some((HasHash(0, 0), 0)),
                 Some((HasHash(1, 1), 1)),
-            ]
+            ])
         );
 
         assert_eq!(map.remove(&HasHash(1, 1)), Some(1));
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 //
                 Some((HasHash(0, 0), 0)),
                 None,
-            ]
+            ])
         );
 
         assert!(map.contains_key(&HasHash(0, 0)));
@@ -1312,25 +1205,25 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 Some((HasHash(0, 2), 0)), // 0
                 Some((HasHash(1, 1), 1)), // 1
                 Some((HasHash(0, 0), 2)), // 2
                 None,
-            ]
+            ])
         );
 
         assert_eq!(map.remove(&HasHash(0, 2)), Some(0));
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 //
                 Some((HasHash(0, 0), 2)),
                 Some((HasHash(1, 1), 1)),
                 None,
                 None,
-            ]
+            ])
         );
     }
 
@@ -1346,25 +1239,25 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 Some((HasHash(0, 2), 0)), // 0
                 Some((HasHash(1, 1), 1)), // 1
                 Some((HasHash(0, 0), 2)), // 2
                 None,
-            ]
+            ])
         );
 
         assert_eq!(map.remove(&HasHash(0, 0)), Some(2));
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 //
                 Some((HasHash(0, 2), 0)),
                 Some((HasHash(1, 1), 1)),
                 None,
                 None,
-            ]
+            ])
         );
     }
 
@@ -1380,25 +1273,25 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 Some((HasHash(0, 1), 1)), // 0
                 Some((HasHash(1, 1), 0)), // 1
                 Some((HasHash(0, 0), 2)), // 2
                 None,
-            ]
+            ])
         );
 
         assert_eq!(map.remove(&HasHash(1, 1)), Some(0));
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 Some((HasHash(0, 1), 1)), // 0
                 Some((HasHash(0, 0), 2)), // 2
                 None,
                 None,
-            ]
+            ])
         );
     }
 
@@ -1414,30 +1307,29 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 Some((HasHash(2, 0), 2)), // 0
                 None,                     // 1
                 Some((HasHash(2, 1), 1)), // 2
                 Some((HasHash(3, 1), 0)), // 3
-            ]
+            ])
         );
 
         assert_eq!(map.remove(&HasHash(3, 1)), Some(0));
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 None,                     // 0
                 None,                     // 1
-                Some((HasHash(2, 1), 1)), // 2
-                Some((HasHash(2, 0), 2)), // 3
-            ]
+                Some((HasHash(2, 0), 2)), // 2
+                Some((HasHash(2, 1), 1)), // 3
+            ])
         );
     }
 
     #[test]
-    #[ignore = "linear probing is broken in it's current implementation (to be fixed)"]
     fn test_fuzzer_failure_02() {
         let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
             @infer,
@@ -1449,25 +1341,25 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 Some((HasHash(3, 2), 2)), // 0
                 None,                     // 1
                 Some((HasHash(2, 0), 0)), // 2
                 Some((HasHash(2, 1), 1)), // 3
-            ]
+            ])
         );
 
         assert_eq!(map.remove(&HasHash(2, 0)), Some(0));
 
         assert_eq!(
-            map.entries,
-            [
+            map.table,
+            ArrayTable::from_array([
                 None,                     // 0
                 None,                     // 1
                 Some((HasHash(2, 1), 1)), // 2
                 Some((HasHash(3, 2), 2)), // 3
-            ]
+            ])
         );
     }
 }

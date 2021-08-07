@@ -1,18 +1,17 @@
 use core::hash::{BuildHasher, Hash};
 use core::{fmt, mem};
 
-use crate::utils::{self, unwrap_unchecked, IterEntries, MutateOnce, Slot};
-use crate::{invariant, VacantEntry};
+use crate::raw::{ArrayTable, RawTable, TableIndex};
+use crate::{utils, VacantEntry};
 
 /// A view into an occupied entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.
 ///
 /// [`Entry`]: crate::Entry
-pub struct OccupiedEntry<'a, K: 'a, V: 'a, B, const N: usize> {
-    entries: &'a mut [Option<(K, V)>; N],
-    index: usize,
+pub struct OccupiedEntry<'a, K, V, B, const N: usize> {
+    table: &'a mut ArrayTable<(K, V), N>,
+    ident: TableIndex<N>,
     build_hasher: &'a B,
-    len: MutateOnce<'a, usize>,
 }
 
 impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
@@ -27,38 +26,23 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     /// - `len > 0` and `len <= N`
     #[must_use]
     pub(crate) unsafe fn new(
-        entries: &'a mut [Option<(K, V)>; N],
-        index: usize,
+        table: &'a mut ArrayTable<(K, V), N>,
+        ident: TableIndex<N>,
         build_hasher: &'a B,
-        len: &'a mut usize,
     ) -> Self {
-        invariant!(entries.len() == N);
-        invariant!(index < N);
-        invariant!(entries[index].is_some());
-        invariant!(*len > 0 && *len <= N);
-
         Self {
-            entries,
-            index,
+            table,
+            ident,
             build_hasher,
-            len: MutateOnce::new(len),
         }
-    }
-
-    #[inline]
-    #[must_use]
-    fn index(&self) -> usize {
-        self.index
     }
 
     #[must_use]
     fn entry(&self) -> (&K, &V) {
-        // SAFETY: invariants are guranteed by the constructor
+        // SAFETY: self has exclusive access to the table, so self.ident is guranteed to
+        //         be valid
         unsafe {
-            debug_assert!(self.index() < self.entries.len());
-            debug_assert!(self.entries[self.index()].is_some());
-
-            let (key, value) = unwrap_unchecked(self.entries.get_unchecked(self.index()).as_ref());
+            let (key, value) = self.table.get_unchecked(self.ident);
             (key, value)
         }
     }
@@ -120,14 +104,9 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     /// ```
     #[must_use]
     pub fn get_mut(&mut self) -> &mut V {
-        // SAFETY: invariants are guranteed by the constructor
-        unsafe {
-            debug_assert!(self.index() < self.entries.len());
-            debug_assert!(self.entries[self.index()].is_some());
-            let index = self.index();
-
-            &mut unwrap_unchecked(self.entries.get_unchecked_mut(index).as_mut()).1
-        }
+        // SAFETY: self has exclusive access to the table, so self.ident is guranteed to
+        //         be valid
+        unsafe { &mut self.table.get_unchecked_mut(self.ident).1 }
     }
 
     /// Replaces the existing value with the provided value and returns the old
@@ -172,13 +151,10 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     /// ```
     #[must_use]
     pub fn into_mut(self) -> &'a mut V {
-        // SAFETY: invariants are guranteed by the constructor
-        unsafe {
-            debug_assert!(self.index < self.entries.len());
-            debug_assert!(self.entries[self.index].is_some());
-
-            &mut unwrap_unchecked(self.entries.get_unchecked_mut(self.index).as_mut()).1
-        }
+        // SAFETY: self has exclusive access to the table, so self.ident is guranteed to
+        //         be valid
+        let (_, value) = unsafe { ArrayTable::<(K, V), N>::into_mut(self.table, self.ident) };
+        value
     }
 }
 
@@ -194,45 +170,6 @@ trait DoubleEndedIteratorExt: DoubleEndedIterator {
 impl<D: DoubleEndedIterator> DoubleEndedIteratorExt for D {}
 
 impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
-    fn find_with_hash(&self, key: &K, index_to_remove: usize) -> Option<usize> {
-        let expected_hash = utils::make_hash::<K, K, B>(self.build_hasher, key);
-
-        let entries = IterEntries::new_with_start(
-            index_to_remove,
-            expected_hash,
-            self.entries,
-            utils::key_hasher(self.build_hasher),
-        );
-
-        let mut last_collision = None;
-        // search until you found a vacant slot or reached the end of the table
-        for slot in entries {
-            // TODO: replace with something smarter (dont generate the entries in the first
-            //       place)
-            if (index_to_remove..=utils::adjust_hash::<N>(expected_hash)).contains(&slot.index()) {
-                continue;
-            }
-
-            match slot {
-                Slot::Collision { index, .. } => {
-                    last_collision = Some(index);
-                }
-                Slot::Occupied { index, hash, .. } => {
-                    let expected_index = utils::adjust_hash::<N>(hash);
-
-                    // check if one can even move the entry to key_index:
-                    if index_to_remove >= expected_index && index != expected_index {
-                        last_collision = Some(index);
-                    }
-                }
-                Slot::Vacant { .. } => {
-                    break;
-                }
-            }
-        }
-        last_collision
-    }
-
     /// Removes the key value pair stored in the map for this entry and returns
     /// the value.
     ///
@@ -283,33 +220,14 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
         (vacant.into_key(), value)
     }
 
-    pub(crate) fn remove_entry_helper(mut self) -> (VacantEntry<'a, K, V, B, N>, V) {
-        self.len.mutate(|len| *len -= 1);
-
-        let mut remove_index = self.index();
-        if let Some(idx) = self.find_with_hash(self.key(), self.index()) {
-            remove_index = idx;
-            let index = self.index();
-            self.entries.swap(index, remove_index); // TODO: remove panic!
-        }
-
+    pub(crate) fn remove_entry_helper(self) -> (VacantEntry<'a, K, V, B, N>, V) {
         // SAFETY: invariants are guarenteed by the constructor
         let (key, value) = unsafe {
-            debug_assert!(self.index() < self.entries.len());
-            unwrap_unchecked(self.entries.get_unchecked_mut(remove_index).take())
+            self.table
+                .remove(self.ident, utils::key_hasher(self.build_hasher))
         };
 
-        // SAFETY: remove_index is valid, because of the previous statement, all the
-        // other invariants have not changed
-        let vacant_entry = unsafe {
-            VacantEntry::new(
-                key,
-                self.entries,
-                remove_index,
-                self.build_hasher,
-                self.len.into_mut(),
-            )
-        };
+        let vacant_entry = unsafe { VacantEntry::new(self.table, key, self.build_hasher) };
         (vacant_entry, value)
     }
 }
@@ -348,18 +266,19 @@ mod tests {
 
     #[test]
     fn test_occupied() {
-        let mut entries = [
+        let mut table = ArrayTable::from_array([
             Some((0, "a")),
             Some((1, "b")),
             Some((2, "c")),
             Some((3, "d")),
             None,
             None,
-        ];
+        ]);
+
+        let ident = unsafe { TableIndex::new(0) };
 
         let build_hasher = BuildHasherDefault::<CollisionHasher>::default();
-        let mut len = 4;
-        let mut occupied = unsafe { OccupiedEntry::new(&mut entries, 0, &build_hasher, &mut len) };
+        let mut occupied = unsafe { OccupiedEntry::new(&mut table, ident, &build_hasher) };
 
         assert_eq!(occupied.key(), &0);
         assert_eq!(occupied.get(), &"a");

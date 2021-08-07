@@ -1,6 +1,8 @@
 use core::fmt;
 use core::iter::FusedIterator;
 
+use crate::raw::RawTableIter;
+
 use super::Iter;
 
 /// An iterator over the keys of an `ArrayMap`.
@@ -10,15 +12,15 @@ use super::Iter;
 ///
 /// [`ArrayMap::keys`]: crate::ArrayMap::keys
 #[must_use]
-pub struct Keys<'a, K, V>(Iter<'a, K, V>);
+pub struct Keys<'a, K, V, R: RawTableIter<(K, V)>>(Iter<'a, K, V, R>);
 
-impl<'a, K, V> Keys<'a, K, V> {
-    pub(crate) const fn new(iter: Iter<'a, K, V>) -> Self {
+impl<'a, K, V, R: RawTableIter<(K, V)>> Keys<'a, K, V, R> {
+    pub(crate) fn new(iter: Iter<'a, K, V, R>) -> Self {
         Self(iter)
     }
 }
 
-impl<'a, K, V> Iterator for Keys<'a, K, V> {
+impl<'a, K, V, R: RawTableIter<(K, V)>> Iterator for Keys<'a, K, V, R> {
     type Item = &'a K;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -26,16 +28,23 @@ impl<'a, K, V> Iterator for Keys<'a, K, V> {
     }
 }
 
-impl<'a, K: fmt::Debug, V: fmt::Debug> fmt::Debug for Keys<'a, K, V> {
+impl<'a, K: fmt::Debug, V: fmt::Debug, R: RawTableIter<(K, V)>> fmt::Debug for Keys<'a, K, V, R>
+where
+    Iter<'a, K, V, R>: Clone,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries((*self).clone()).finish()
     }
 }
 
-impl<'a, K, V> Clone for Keys<'a, K, V> {
+impl<'a, K, V, R: RawTableIter<(K, V)>> Clone for Keys<'a, K, V, R>
+where
+    Iter<'a, K, V, R>: Clone,
+{
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
-impl<'a, K, V> FusedIterator for Keys<'a, K, V> {}
+// TODO: constrain to Iter?
+impl<'a, K, V, R: RawTableIter<(K, V)>> FusedIterator for Keys<'a, K, V, R> {}

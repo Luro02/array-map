@@ -235,10 +235,11 @@ impl<'a, K: Hash, V: Default, B: BuildHasher, const N: usize> Entry<'a, K, V, B,
 }
 
 impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
-    /// Ensures that no value is associated with the key and returns a `VacantEntry`.
-    /// 
+    /// Ensures that no value is associated with the key and returns a
+    /// `VacantEntry`.
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use array_map::ArrayMap;
     ///

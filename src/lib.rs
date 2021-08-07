@@ -6,7 +6,8 @@
     maybe_uninit_uninit_array,
     maybe_uninit_array_assume_init,
     try_trait_v2,
-    stmt_expr_attributes
+    stmt_expr_attributes,
+    generic_associated_types
 )]
 #![cfg_attr(feature = "nightly", feature(core_intrinsics))]
 #![warn(clippy::nursery, clippy::pedantic)]
@@ -25,6 +26,7 @@ mod external_trait_impls;
 pub mod iter;
 mod macros;
 mod occupied;
+mod raw;
 mod utils;
 mod vacant;
 

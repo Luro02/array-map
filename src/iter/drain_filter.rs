@@ -1,7 +1,8 @@
 use core::hash::{BuildHasher, Hash};
 use core::mem;
 
-use crate::ArrayMap;
+use crate::raw::{ArrayTable, RawTable};
+use crate::utils;
 
 /// A draining iterator over entries of an `ArrayMap` which do not satisfy the
 /// predicate `F`.
@@ -16,8 +17,9 @@ where
     K: Hash + Eq,
 {
     f: F,
-    map: &'a mut ArrayMap<K, V, N, B>,
-    index: usize,
+    iter: <ArrayTable<(K, V), N> as RawTable<(K, V)>>::RawIter,
+    table: &'a mut ArrayTable<(K, V), N>,
+    build_hasher: &'a B,
 }
 
 impl<'a, K, V, F, B: BuildHasher, const N: usize> DrainFilter<'a, K, V, F, B, N>
@@ -25,8 +27,13 @@ where
     F: FnMut(&K, &mut V) -> bool,
     K: Hash + Eq,
 {
-    pub(crate) fn new(f: F, map: &'a mut ArrayMap<K, V, N, B>) -> Self {
-        Self { f, map, index: 0 }
+    pub(crate) fn new(f: F, table: &'a mut ArrayTable<(K, V), N>, build_hasher: &'a B) -> Self {
+        Self {
+            f,
+            iter: table.iter(),
+            table,
+            build_hasher,
+        }
     }
 }
 
@@ -38,19 +45,13 @@ where
     type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.index < N {
-            let index = self.index;
-            self.index += 1;
-
-            if let Some((key, value)) = self.map.get_key_value_mut_index(index) {
-                if (self.f)(key, value) {
-                    let result = self.map.remove_entry_index(index);
-
-                    // removing an entry from the map, may cause other entries to fill in the empty
-                    // spot
-                    self.index = index;
-
-                    return result;
+        // TODO: is it okay that the table is invalid until DrainFilter is dropped?
+        for ident in &mut self.iter {
+            unsafe {
+                let (k, v) = self.table.get_unchecked_mut(ident.clone());
+                if (self.f)(&*k, v) {
+                    let result = self.table.erase(ident);
+                    return Some(result);
                 }
             }
         }
@@ -67,6 +68,7 @@ where
 {
     fn drop(&mut self) {
         self.for_each(mem::drop);
+        self.table.rehash(utils::key_hasher(self.build_hasher));
     }
 }
 

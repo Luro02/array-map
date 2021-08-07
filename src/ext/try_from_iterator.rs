@@ -9,7 +9,10 @@ use crate::utils::ArrayExt;
 /// ```
 /// use array_map::ext::TryFromIterator;
 ///
-/// assert_eq!(<[usize; 5]>::try_from_iter([1, 2, 3, 4, 5]), Ok([1, 2, 3, 4, 5]));
+/// assert_eq!(
+///     <[usize; 5]>::try_from_iter([1, 2, 3, 4, 5]),
+///     Ok([1, 2, 3, 4, 5])
+/// );
 /// ```
 pub trait TryFromIterator<A>: Sized {
     /// The error returned if it failed to collect into `Self`.

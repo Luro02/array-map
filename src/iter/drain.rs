@@ -1,7 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 
 use super::DrainFilter;
-use crate::ArrayMap;
+use crate::raw::ArrayTable;
 
 /// A draining iterator over entries of an `ArrayMap`.
 ///
@@ -20,9 +20,9 @@ impl<'a, K, V, B: BuildHasher, const N: usize> Drain<'a, K, V, B, N>
 where
     K: Hash + Eq,
 {
-    pub(crate) fn new(map: &'a mut ArrayMap<K, V, N, B>) -> Self {
+    pub(crate) fn new(table: &'a mut ArrayTable<(K, V), N>, build_hasher: &'a B) -> Self {
         Self {
-            inner: DrainFilter::new(|_, _| true, map),
+            inner: DrainFilter::new(|_, _| true, table, build_hasher),
         }
     }
 }

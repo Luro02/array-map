@@ -1,5 +1,6 @@
 use core::fmt;
-use core::iter::FusedIterator;
+
+use crate::raw::RawTableIter;
 
 use super::IterMut;
 
@@ -10,15 +11,15 @@ use super::IterMut;
 ///
 /// [`ArrayMap::values_mut`]: crate::ArrayMap::values_mut
 #[must_use]
-pub struct ValuesMut<'a, K, V>(IterMut<'a, K, V>);
+pub struct ValuesMut<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>>(IterMut<'a, K, V, R>);
 
-impl<'a, K, V> ValuesMut<'a, K, V> {
-    pub(crate) const fn new(iter: IterMut<'a, K, V>) -> Self {
+impl<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> ValuesMut<'a, K, V, R> {
+    pub(crate) fn new(iter: IterMut<'a, K, V, R>) -> Self {
         Self(iter)
     }
 }
 
-impl<'a, K, V> Iterator for ValuesMut<'a, K, V> {
+impl<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> Iterator for ValuesMut<'a, K, V, R> {
     type Item = &'a mut V;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -26,12 +27,13 @@ impl<'a, K, V> Iterator for ValuesMut<'a, K, V> {
     }
 }
 
-impl<'a, K: fmt::Debug, V: fmt::Debug> fmt::Debug for ValuesMut<'a, K, V> {
+impl<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> fmt::Debug for ValuesMut<'a, K, V, R>
+where
+    K: fmt::Debug,
+    V: fmt::Debug,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_list()
-            .entries(self.0.iter().map(|(_, v)| v))
-            .finish()
+        // TODO: more descriptive formatting
+        f.debug_struct(stringify!(ValuesMut)).finish()
     }
 }
-
-impl<'a, K, V> FusedIterator for ValuesMut<'a, K, V> {}

@@ -1,44 +1,37 @@
-use core::{fmt, slice};
-use core::iter::FusedIterator;
+use core::fmt;
+
+use crate::raw::{MutableIterator, RawTableIter};
 
 #[must_use]
-pub struct IterMut<'a, K, V>(slice::IterMut<'a, Option<(K, V)>>);
+pub struct IterMut<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> {
+    iter: <R as RawTableIter<(K, V)>>::IterMut<'a>,
+}
 
-impl<'a, K, V> IterMut<'a, K, V> {
-    pub(crate) fn new(entries: &'a mut [Option<(K, V)>]) -> Self {
-        Self(entries.iter_mut())
-    }
-
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &(K, V)> {
-        self.0.as_slice().iter().flatten()
-    }
-
-    #[inline]
-    #[must_use]
-    fn len(&self) -> usize {
-        self.iter().count()
+impl<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> IterMut<'a, K, V, R> {
+    pub(crate) fn new(table: &'a mut R) -> Self {
+        Self {
+            iter: <R as RawTableIter<(K, V)>>::iter_mut(table),
+        }
     }
 }
 
-impl<'a, K, V> Iterator for IterMut<'a, K, V> {
+impl<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> Iterator for IterMut<'a, K, V, R> {
     type Item = (&'a K, &'a mut V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (k, v) = (&mut self.0).flatten().next()?;
-        Some((k, v))
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.len(), Some(self.len()))
+        match self.iter.next() {
+            Some((key, value)) => Some((key, value)),
+            None => None,
+        }
     }
 }
 
-impl<'a, K: fmt::Debug, V: fmt::Debug> fmt::Debug for IterMut<'a, K, V> {
+impl<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> fmt::Debug for IterMut<'a, K, V, R>
+where
+    K: fmt::Debug,
+    V: fmt::Debug,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_list().entries(self.iter()).finish()
+        f.debug_list().entries(self.iter.iter()).finish()
     }
 }
-
-impl<'a, K, V> FusedIterator for IterMut<'a, K, V> {}
-
-impl<'a, K, V> ExactSizeIterator for IterMut<'a, K, V> {}

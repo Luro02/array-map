@@ -1,10 +1,6 @@
 mod iter_circular;
-mod iter_entries;
-mod mutate_once;
 
 pub(crate) use iter_circular::*;
-pub(crate) use iter_entries::*;
-pub(crate) use mutate_once::*;
 
 use core::borrow::Borrow;
 use core::hash::{BuildHasher, Hash, Hasher};
@@ -28,7 +24,7 @@ pub(crate) fn adjust_hash<const N: usize>(hash: u64) -> usize {
     (hash % (N as u64)) as usize
 }
 
-pub(crate) fn key_hasher<K, V, B>(build_hasher: &B) -> impl FnMut(&(K, V)) -> u64 + '_
+pub(crate) fn key_hasher<K, V, B>(build_hasher: &B) -> impl Fn(&(K, V)) -> u64 + '_
 where
     B: BuildHasher,
     K: Hash,
@@ -52,13 +48,22 @@ macro_rules! unreachable_unchecked {
 #[cfg(not(debug_assertions))]
 macro_rules! unreachable_unchecked {
     () => {
-        ::core::hint::unreachable_unchecked()
+        #[allow(unused_unsafe)]
+        unsafe {
+            ::core::hint::unreachable_unchecked()
+        }
     };
     ($msg:expr $(,)?) => {
-        ::core::hint::unreachable_unchecked()
+        #[allow(unused_unsafe)]
+        unsafe {
+            ::core::hint::unreachable_unchecked()
+        }
     };
     ($fmt:expr, $($arg:tt)*) => {
-        ::core::hint::unreachable_unchecked()
+        #[allow(unused_unsafe)]
+        unsafe {
+            ::core::hint::unreachable_unchecked()
+        }
     };
 }
 
