@@ -1,26 +1,38 @@
 use core::borrow::Borrow;
+use core::fmt;
 use core::hash::{BuildHasher, Hash};
+use core::marker::PhantomData;
 
+use crate::raw::RawTable;
 use crate::utils;
 
-pub struct RawEntryBuilder<'a, K, V, B: BuildHasher, const N: usize> {
-    entries: &'a [Option<(K, V)>; N],
+pub struct RawEntryBuilder<'a, K, V, R: RawTable<(K, V)>, B: BuildHasher> {
+    table: &'a R,
     build_hasher: &'a B,
+    _p: PhantomData<&'a (K, V)>,
 }
 
-impl<'a, K, V, B, const N: usize> RawEntryBuilder<'a, K, V, B, N>
+impl<'a, K, V, R, B> RawEntryBuilder<'a, K, V, R, B>
 where
+    R: RawTable<(K, V)>,
     B: BuildHasher,
-    K: Hash + Eq, // TODO: not required in hashbrown implementation?
 {
     #[must_use]
-    pub(crate) fn new(entries: &'a [Option<(K, V)>; N], build_hasher: &'a B) -> Self {
+    pub(crate) fn new(table: &'a R, build_hasher: &'a B) -> Self {
         Self {
-            entries,
+            table,
             build_hasher,
+            _p: PhantomData,
         }
     }
+}
 
+impl<'a, K, V, R, B> RawEntryBuilder<'a, K, V, R, B>
+where
+    B: BuildHasher,
+    R: RawTable<(K, V)>,
+{
+    /// Access an entry by key.
     pub fn from_key<Q: ?Sized>(self, qkey: &Q) -> Option<(&'a K, &'a V)>
     where
         K: Borrow<Q>,
@@ -31,6 +43,7 @@ where
         self.from_key_hashed_nocheck(hash, qkey)
     }
 
+    /// Access an entry by a key and its hash.
     pub fn from_key_hashed_nocheck<Q: ?Sized>(self, hash: u64, qkey: &Q) -> Option<(&'a K, &'a V)>
     where
         K: Borrow<Q>,
@@ -39,10 +52,31 @@ where
         self.from_hash(hash, |key| key.borrow() == qkey)
     }
 
-    pub fn from_hash<F>(self, hash: u64, mut is_match: F) -> Option<(&'a K, &'a V)>
+    /// Access an entry by hash.
+    pub fn from_hash<F>(self, hash: u64, is_match: F) -> Option<(&'a K, &'a V)>
     where
         F: FnMut(&K) -> bool,
     {
-        unimplemented!()
+        self.search(hash, is_match)
+    }
+
+    fn search<F>(self, hash: u64, mut is_match: F) -> Option<(&'a K, &'a V)>
+    where
+        F: FnMut(&K) -> bool,
+    {
+        match self.table.get(hash, |(key, _)| is_match(key)) {
+            Some((key, value)) => Some((key, value)),
+            None => None,
+        }
+    }
+}
+
+impl<'a, K, V, R, B> fmt::Debug for RawEntryBuilder<'a, K, V, R, B>
+where
+    R: RawTable<(K, V)>,
+    B: BuildHasher,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(stringify!(RawEntryBuilder)).finish()
     }
 }

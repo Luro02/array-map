@@ -8,7 +8,7 @@ use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::ext::{TryExtend, TryFromIterator};
 use crate::iter::{Drain, DrainFilter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
-use crate::raw::{ArrayTable, RawTable};
+use crate::raw::{ArrayTable, RawEntryBuilder, RawTable};
 use crate::utils;
 use crate::vacant::VacantEntry;
 
@@ -754,6 +754,29 @@ where
         F: FnMut(&K, &mut V) -> bool,
     {
         self.drain_filter(|key, value| !(f(key, value)));
+    }
+
+    /// Creates a raw immutable entry builder for the `ArrayMap`.
+    ///
+    /// Raw entries provide the lowest level of control for searching and
+    /// manipulating a map.
+    ///
+    /// They must be manually initialized with a hash and then manually
+    /// searched.
+    ///
+    /// This is useful for
+    /// - Hash memoization
+    /// - Using a search key that does not work with the [`Borrow`] trait
+    /// - Using custom comparison logic with newtype wrappers
+    ///
+    /// Unless you are in such a situation, higher-level and more foolproof APIs
+    /// like [`ArrayMap::get`] should be preferred.
+    ///
+    /// Immutable raw entries have a very limited use; you might instead want to
+    /// use `ArrayMap::raw_entry_mut`.
+    #[must_use]
+    pub fn raw_entry(&self) -> RawEntryBuilder<'_, K, V, ArrayTable<(K, V), N>, B> {
+        RawEntryBuilder::new(&self.table, &self.build_hasher)
     }
 
     pub(crate) fn into_parts(self) -> (B, <ArrayTable<(K, V), N> as IntoIterator>::IntoIter) {
