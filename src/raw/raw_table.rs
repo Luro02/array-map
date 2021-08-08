@@ -7,7 +7,7 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
     /// A type that uniquely identifes an occupied entry in the table.
     ///
     /// This ident must be valid until a value has been removed from the table.
-    type Ident;
+    type Ident: Clone;
     type InsertError;
     type RawIter: Iterator<Item = Self::Ident>;
     type DrainIter: Iterator<Item = T>;
@@ -46,11 +46,6 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
     ///
     /// This may cause entries to become unreachable through `find`.
     unsafe fn erase(&mut self, ident: Self::Ident) -> T;
-
-    /// Clears the table, which removes all entries.
-    fn clear(&mut self) {
-        mem::drop(self.drain());
-    }
 
     #[must_use]
     fn drain(&mut self) -> Self::DrainIter;
@@ -94,6 +89,18 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
     #[must_use]
     fn capacity(&self) -> usize;
 
+    #[must_use]
+    fn get_each_mut<const M: usize>(
+        &mut self,
+        hashes: [u64; M],
+        eq: impl FnMut(usize, &T) -> bool,
+    ) -> [Result<&mut T, UnavailableMutError>; M];
+
+    /// Clears the table, which removes all entries.
+    fn clear(&mut self) {
+        mem::drop(self.drain());
+    }
+
     /// Returns the number of entries that are currently in the table.
     #[must_use]
     fn len(&self) -> usize {
@@ -125,13 +132,6 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
             None
         }
     }
-
-    #[must_use]
-    fn get_each_mut<const M: usize>(
-        &mut self,
-        hashes: [u64; M],
-        eq: impl FnMut(usize, &T) -> bool,
-    ) -> [Result<&mut T, UnavailableMutError>; M];
 
     /// This method is used to rediscover lost entries (can be caused by
     /// `erase`) in the table.
