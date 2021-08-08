@@ -1349,8 +1349,8 @@ mod tests {
             ArrayTable::from_array([
                 None,                     // 0
                 None,                     // 1
-                Some((HasHash(2, 0), 2)), // 2
-                Some((HasHash(2, 1), 1)), // 3
+                Some((HasHash(2, 1), 1)), // 2
+                Some((HasHash(2, 0), 2)), // 3
             ])
         );
     }
@@ -1385,6 +1385,74 @@ mod tests {
                 None,                     // 1
                 Some((HasHash(2, 1), 1)), // 2
                 Some((HasHash(3, 2), 2)), // 3
+            ])
+        );
+    }
+
+    #[test]
+    fn test_fuzzer_failure_03() {
+        let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(3, 1) => 0,
+            HasHash(3, 3) => 1,
+            HasHash(0, 0) => 2,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.table,
+            ArrayTable::from_array([
+                Some((HasHash(3, 3), 1)), // 0
+                Some((HasHash(0, 0), 2)), // 1
+                None,                     // 2
+                Some((HasHash(3, 1), 0)), // 3
+            ])
+        );
+
+        assert_eq!(map.remove(&HasHash(3, 1)), Some(0));
+
+        assert_eq!(
+            map.table,
+            ArrayTable::from_array([
+                Some((HasHash(0, 0), 2)), // 0
+                None,                     // 1
+                None,                     // 2
+                Some((HasHash(3, 3), 1)), // 3
+            ])
+        );
+    }
+
+    #[test]
+    fn test_fuzzer_failure_04() {
+        let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(0, 0) => 0,
+            HasHash(3, 1) => 1,
+            HasHash(3, 2) => 2,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.table,
+            ArrayTable::from_array([
+                Some((HasHash(0, 0), 0)), // 0
+                Some((HasHash(3, 2), 2)), // 1
+                None,                     // 2
+                Some((HasHash(3, 1), 1)), // 3
+            ])
+        );
+
+        assert_eq!(map.remove(&HasHash(0, 0)), Some(0));
+
+        assert_eq!(
+            map.table,
+            ArrayTable::from_array([
+                Some((HasHash(3, 2), 2)), // 0
+                None,                     // 1
+                None,                     // 2
+                Some((HasHash(3, 1), 1)), // 3
             ])
         );
     }

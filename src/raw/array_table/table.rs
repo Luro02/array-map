@@ -33,6 +33,76 @@ impl<T, const N: usize> ArrayTable<T, N> {
             }
         })
     }
+
+    fn restore_order(
+        &mut self,
+        index: TableIndex<N>,
+        stop: TableIndex<N>,
+        hasher: impl Fn(&T) -> u64,
+    ) -> Option<TableIndex<N>> {
+        let index_to_fill = index.index();
+        let stop_index = stop.index();
+
+        unsafe {
+            invariant!(index_to_fill < self.data.len());
+
+            if self.data.get_unchecked(index_to_fill).is_some() {
+                return None;
+            }
+        }
+
+        let mut last_entry_fill = None;
+        // skip(1), so one does not check the vacant entry at index_to_fill
+        for (index, entry) in IterCircular::new(index_to_fill, &self.data).skip(1) {
+            if index == stop_index {
+                break;
+            }
+
+            if let Some(entry) = entry {
+                let hash = hasher(entry);
+                let expected_index = utils::adjust_hash::<N>(hash);
+
+                // skip entries that are correctly placed
+                if expected_index == index {
+                    continue;
+                }
+
+                let current_distance = {
+                    if utils::likely(expected_index <= index) {
+                        index - expected_index
+                    } else {
+                        // wrap around
+                        self.capacity() - expected_index + index
+                    }
+                };
+
+                let new_distance = {
+                    if utils::likely(expected_index <= index_to_fill) {
+                        index_to_fill - expected_index
+                    } else {
+                        self.capacity() - expected_index + index_to_fill
+                    }
+                };
+
+                if current_distance > new_distance {
+                    last_entry_fill = Some(index);
+                }
+            } else {
+                // reached an empty entry, so one can stop search for possible fillers
+                break;
+            }
+        }
+
+        if let Some(last_entry_fill) = last_entry_fill {
+            invariant!(last_entry_fill < self.data.len());
+            invariant!(index_to_fill < self.data.len());
+
+            self.data.swap(index_to_fill, last_entry_fill);
+            Some(unsafe { TableIndex::new(last_entry_fill) })
+        } else {
+            None
+        }
+    }
 }
 
 impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
@@ -125,23 +195,15 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
     }
 
     unsafe fn remove(&mut self, ident: Self::Ident, hasher: impl Fn(&T) -> u64) -> T {
-        // let index_to_fill = ident.index();
         let old_entry = self.erase(ident);
-        // index_to_fill may not equal expected_index if the expected_index has been
-        // occupied by another entry
-        // let expected_index = utils::adjust_hash::<N>(hasher(&old_entry));
+        self.len -= 1;
 
-        // TODO: fill the empty spot, so old entries are still reachable!?
-        /*
-        for (index, entry) in IterCircular::new(index_to_fill, &self.data) {
-            if index == index_to_fill {
-                continue;
-            }
-        }*/
+        let start = TableIndex::new(utils::adjust_hash::<N>(hasher(&old_entry)));
+        let mut ident = ident;
+        while let Some(index) = self.restore_order(ident, start, |v| hasher(v)) {
+            ident = index;
+        }
 
-        // TODO: this should work, but may be realatively slow as it rebuilds the entire
-        //       table on every removal. Alternatively one may use linear probing!
-        self.rehash(hasher);
         old_entry
     }
 
