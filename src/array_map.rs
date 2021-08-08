@@ -639,7 +639,7 @@ where
     ///
     /// assert_eq!(drained, [None, None, None, Some(("rust", "rost")),]);
     /// ```
-    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, B, N>
+    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, ArrayTable<(K, V), N>, B>
     where
         F: FnMut(&K, &mut V) -> bool,
     {
@@ -672,7 +672,7 @@ where
     ///     ]
     /// );
     /// ```
-    pub fn drain(&mut self) -> Drain<'_, K, V, B, N> {
+    pub fn drain(&mut self) -> Drain<'_, K, V, ArrayTable<(K, V), N>, B> {
         Drain::new(&mut self.table, &self.build_hasher)
     }
 

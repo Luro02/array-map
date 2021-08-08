@@ -1,7 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 use core::mem;
 
-use crate::raw::{ArrayTable, RawTable};
+use crate::raw::RawTable;
 use crate::utils;
 
 /// A draining iterator over entries of an `ArrayMap` which do not satisfy the
@@ -11,23 +11,27 @@ use crate::utils;
 /// for more.
 ///
 /// [`ArrayMap::drain_filter`]: crate::ArrayMap::drain_filter
-pub struct DrainFilter<'a, K, V, F, B: BuildHasher, const N: usize>
+pub struct DrainFilter<'a, K, V, F, R, B>
 where
+    B: BuildHasher,
     F: FnMut(&K, &mut V) -> bool,
     K: Hash + Eq,
+    R: RawTable<(K, V)>,
 {
     f: F,
-    iter: <ArrayTable<(K, V), N> as RawTable<(K, V)>>::RawIter,
-    table: &'a mut ArrayTable<(K, V), N>,
+    iter: R::RawIter,
+    table: &'a mut R,
     build_hasher: &'a B,
 }
 
-impl<'a, K, V, F, B: BuildHasher, const N: usize> DrainFilter<'a, K, V, F, B, N>
+impl<'a, K, V, F, R, B> DrainFilter<'a, K, V, F, R, B>
 where
+    B: BuildHasher,
     F: FnMut(&K, &mut V) -> bool,
     K: Hash + Eq,
+    R: RawTable<(K, V)>,
 {
-    pub(crate) fn new(f: F, table: &'a mut ArrayTable<(K, V), N>, build_hasher: &'a B) -> Self {
+    pub(crate) fn new(f: F, table: &'a mut R, build_hasher: &'a B) -> Self {
         Self {
             f,
             iter: table.iter(),
@@ -37,10 +41,12 @@ where
     }
 }
 
-impl<'a, K, V, F, B: BuildHasher, const N: usize> Iterator for DrainFilter<'a, K, V, F, B, N>
+impl<'a, K, V, F, R, B> Iterator for DrainFilter<'a, K, V, F, R, B>
 where
+    B: BuildHasher,
     F: FnMut(&K, &mut V) -> bool,
     K: Eq + Hash,
+    R: RawTable<(K, V)>,
 {
     type Item = (K, V);
 
@@ -60,11 +66,12 @@ where
     }
 }
 
-impl<'a, K, V, F, B, const N: usize> Drop for DrainFilter<'a, K, V, F, B, N>
+impl<'a, K, V, F, R, B> Drop for DrainFilter<'a, K, V, F, R, B>
 where
     B: BuildHasher,
     F: FnMut(&K, &mut V) -> bool,
     K: Eq + Hash,
+    R: RawTable<(K, V)>,
 {
     fn drop(&mut self) {
         self.for_each(mem::drop);

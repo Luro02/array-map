@@ -1,7 +1,7 @@
 use core::hash::{BuildHasher, Hash};
 
 use super::DrainFilter;
-use crate::raw::ArrayTable;
+use crate::raw::RawTable;
 
 /// A draining iterator over entries of an `ArrayMap`.
 ///
@@ -9,27 +9,33 @@ use crate::raw::ArrayTable;
 /// more.
 ///
 /// [`ArrayMap::drain`]: crate::ArrayMap::drain
-pub struct Drain<'a, K, V, B: BuildHasher, const N: usize>
+pub struct Drain<'a, K, V, R, B>
 where
     K: Hash + Eq,
+    R: RawTable<(K, V)>,
+    B: BuildHasher,
 {
-    inner: DrainFilter<'a, K, V, fn(&K, &mut V) -> bool, B, N>,
+    inner: DrainFilter<'a, K, V, fn(&K, &mut V) -> bool, R, B>,
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> Drain<'a, K, V, B, N>
+impl<'a, K, V, R, B> Drain<'a, K, V, R, B>
 where
     K: Hash + Eq,
+    R: RawTable<(K, V)>,
+    B: BuildHasher,
 {
-    pub(crate) fn new(table: &'a mut ArrayTable<(K, V), N>, build_hasher: &'a B) -> Self {
+    pub(crate) fn new(table: &'a mut R, build_hasher: &'a B) -> Self {
         Self {
             inner: DrainFilter::new(|_, _| true, table, build_hasher),
         }
     }
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> Iterator for Drain<'a, K, V, B, N>
+impl<'a, K, V, R, B> Iterator for Drain<'a, K, V, R, B>
 where
     K: Eq + Hash,
+    R: RawTable<(K, V)>,
+    B: BuildHasher,
 {
     type Item = (K, V);
 
