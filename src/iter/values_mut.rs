@@ -1,7 +1,7 @@
 use core::fmt;
 use core::iter::FusedIterator;
 
-use crate::raw::RawTableIter;
+use crate::raw::{IntoImmutableIter, RawTableIter};
 
 use super::IterMut;
 
@@ -34,8 +34,7 @@ where
     V: fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO: more descriptive formatting
-        f.debug_struct(stringify!(ValuesMut)).finish()
+        f.debug_list().entries(self.0.iter()).finish()
     }
 }
 
