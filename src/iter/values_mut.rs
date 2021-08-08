@@ -1,4 +1,5 @@
 use core::fmt;
+use core::iter::FusedIterator;
 
 use crate::raw::RawTableIter;
 
@@ -36,4 +37,11 @@ where
         // TODO: more descriptive formatting
         f.debug_struct(stringify!(ValuesMut)).finish()
     }
+}
+
+impl<'a, K, V, R: RawTableIter<(K, V)>> FusedIterator for ValuesMut<'a, K, V, R>
+//
+where
+    IterMut<'a, K, V, R>: FusedIterator
+{
 }

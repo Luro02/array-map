@@ -46,5 +46,10 @@ where
     }
 }
 
-// TODO: constrain to Iter?
-impl<'a, K, V, R: RawTableIter<(K, V)>> FusedIterator for Keys<'a, K, V, R> {}
+impl<'a, K, V, R> FusedIterator for Keys<'a, K, V, R>
+//
+where
+    Iter<'a, K, V, R>: FusedIterator,
+    R: RawTableIter<(K, V)>,
+{
+}

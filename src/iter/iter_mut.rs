@@ -1,4 +1,5 @@
 use core::fmt;
+use core::iter::FusedIterator;
 
 use crate::raw::{MutableIterator, RawTableIter};
 
@@ -34,4 +35,11 @@ where
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.iter.iter()).finish()
     }
+}
+
+impl<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> FusedIterator for IterMut<'a, K, V, R>
+//
+// where
+//     <R as RawTableIter<(K, V)>>::IterMut<'a>: FusedIterator
+{
 }

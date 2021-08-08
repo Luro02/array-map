@@ -42,7 +42,9 @@ where
     }
 }
 
-impl<'a, K, V, R: RawTableIter<(K, V)>> FusedIterator for Iter<'a, K, V, R> where
-    R::IntoIter: FusedIterator
+impl<'a, K, V, R: RawTableIter<(K, V)>> FusedIterator for Iter<'a, K, V, R>
+//
+where
+    R::Iter<'a>: FusedIterator
 {
 }
