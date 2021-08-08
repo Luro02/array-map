@@ -1,6 +1,6 @@
 use core::slice;
 
-pub trait MutableIterator<'a, T: 'a>: Iterator<Item = &'a mut T> {
+pub trait IntoImmutableIter<T> {
     type Iter<'b>: Iterator<Item = &'b T>
     where
         T: 'b;
@@ -10,7 +10,7 @@ pub trait MutableIterator<'a, T: 'a>: Iterator<Item = &'a mut T> {
     fn iter(&self) -> Self::Iter<'_>;
 }
 
-impl<'a, T> MutableIterator<'a, T> for slice::IterMut<'a, T> {
+impl<'a, T> IntoImmutableIter<T> for slice::IterMut<'a, T> {
     type Iter<'b>
     where
         T: 'b,

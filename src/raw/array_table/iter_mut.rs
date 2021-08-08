@@ -1,6 +1,6 @@
 use core::{iter, slice};
 
-use crate::raw::MutableIterator;
+use crate::raw::IntoImmutableIter;
 
 pub struct IterMut<'a, T> {
     iter: slice::IterMut<'a, Option<T>>,
@@ -20,11 +20,11 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     }
 }
 
-impl<'a, T> MutableIterator<'a, T> for IterMut<'a, T> {
+impl<'a, T> IntoImmutableIter<T> for IterMut<'a, T> {
     type Iter<'b>
     where
         T: 'b,
-    = iter::Flatten<<slice::IterMut<'b, Option<T>> as MutableIterator<'b, Option<T>>>::Iter<'b>>;
+    = iter::Flatten<<slice::IterMut<'b, Option<T>> as IntoImmutableIter<Option<T>>>::Iter<'b>>;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.iter.iter().flatten()
