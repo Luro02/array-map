@@ -192,7 +192,10 @@ where
     /// assert_eq!(letters.get(&'y'), None);
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn entry(&mut self, key: K) -> Result<Entry<'_, K, V, B, N>, CapacityError> {
+    pub fn entry(
+        &mut self,
+        key: K,
+    ) -> Result<Entry<'_, K, V, ArrayTable<(K, V), N>, B>, CapacityError> {
         let hash = utils::make_hash::<K, K, B>(&self.build_hasher, &key);
 
         if let Some(ident) = self.table.find(hash, |(k, _)| k.eq(&key)) {

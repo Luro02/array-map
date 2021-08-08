@@ -2,6 +2,7 @@ use core::fmt;
 use core::hash::{BuildHasher, Hash};
 
 use crate::occupied::OccupiedEntry;
+use crate::raw::RawTable;
 use crate::vacant::VacantEntry;
 
 /// A view into a single entry in a map, which may either be vacant or occupied.
@@ -10,14 +11,14 @@ use crate::vacant::VacantEntry;
 ///
 /// [`ArrayMap`]: crate::ArrayMap
 /// [`entry`]: crate::ArrayMap::entry
-pub enum Entry<'a, K: 'a, V: 'a, B, const N: usize> {
+pub enum Entry<'a, K: 'a, V: 'a, R: RawTable<(K, V)>, B: BuildHasher> {
     /// An occupied entry.
-    Occupied(OccupiedEntry<'a, K, V, B, N>),
+    Occupied(OccupiedEntry<'a, K, V, R, B>),
     /// A vacant entry.
-    Vacant(VacantEntry<'a, K, V, B, N>),
+    Vacant(VacantEntry<'a, K, V, R, B>),
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
+impl<'a, K, V, R: RawTable<(K, V)>, B: BuildHasher> Entry<'a, K, V, R, B> {
     /// Returns a reference to this entry's key.
     ///
     /// # Examples
@@ -70,7 +71,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
     }
 }
 
-impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
+impl<'a, K: Hash, V, R: RawTable<(K, V)>, B: BuildHasher> Entry<'a, K, V, R, B> {
     /// Sets the value of the entry, and returns an [`OccupiedEntry`].
     ///
     /// # Examples
@@ -84,7 +85,7 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
     /// assert_eq!(entry.key(), &"horseyland");
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, B, N> {
+    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, R, B> {
         match self {
             Self::Occupied(mut entry) => {
                 entry.insert(value);
@@ -211,7 +212,7 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
     }
 }
 
-impl<'a, K: Hash, V: Default, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
+impl<'a, K: Hash, V: Default, R: RawTable<(K, V)>, B: BuildHasher> Entry<'a, K, V, R, B> {
     /// Ensures a value is in the entry by inserting the default value if empty,
     /// and returns a mutable reference to the value in the entry.
     ///
@@ -234,7 +235,7 @@ impl<'a, K: Hash, V: Default, B: BuildHasher, const N: usize> Entry<'a, K, V, B,
     }
 }
 
-impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> {
+impl<'a, K: Hash + Eq, V, R: RawTable<(K, V)>, B: BuildHasher> Entry<'a, K, V, R, B> {
     /// Ensures that no value is associated with the key and returns a
     /// `VacantEntry`.
     ///
@@ -253,7 +254,7 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> 
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     #[must_use = "directly call ArrayMap::remove if you dont use the VacantEntry"]
-    pub fn remove_entry(self) -> VacantEntry<'a, K, V, B, N> {
+    pub fn remove_entry(self) -> VacantEntry<'a, K, V, R, B> {
         match self {
             Self::Occupied(entry) => entry.remove_entry_helper().0,
             Self::Vacant(entry) => entry,
@@ -261,29 +262,32 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> Entry<'a, K, V, B, N> 
     }
 }
 
-impl<'a, K, V, const N: usize, B> From<OccupiedEntry<'a, K, V, B, N>> for Entry<'a, K, V, B, N>
+impl<'a, K, V, R, B> From<OccupiedEntry<'a, K, V, R, B>> for Entry<'a, K, V, R, B>
 where
     B: BuildHasher,
+    R: RawTable<(K, V)>,
 {
-    fn from(value: OccupiedEntry<'a, K, V, B, N>) -> Self {
+    fn from(value: OccupiedEntry<'a, K, V, R, B>) -> Self {
         Self::Occupied(value)
     }
 }
 
-impl<'a, K, V, const N: usize, B> From<VacantEntry<'a, K, V, B, N>> for Entry<'a, K, V, B, N>
+impl<'a, K, V, R, B> From<VacantEntry<'a, K, V, R, B>> for Entry<'a, K, V, R, B>
 where
     B: BuildHasher,
+    R: RawTable<(K, V)>,
 {
-    fn from(value: VacantEntry<'a, K, V, B, N>) -> Self {
+    fn from(value: VacantEntry<'a, K, V, R, B>) -> Self {
         Self::Vacant(value)
     }
 }
 
-impl<'a, K, V, B, const N: usize> fmt::Debug for Entry<'a, K, V, B, N>
+impl<'a, K, V, R, B> fmt::Debug for Entry<'a, K, V, R, B>
 where
     K: fmt::Debug,
     V: fmt::Debug,
     B: BuildHasher,
+    R: RawTable<(K, V)>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

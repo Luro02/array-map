@@ -1,36 +1,35 @@
 use core::fmt;
 use core::hash::{BuildHasher, Hash};
+use core::marker::PhantomData;
 
-use crate::raw::{ArrayTable, RawTable};
+use crate::raw::RawTable;
 use crate::{invariant, unreachable_unchecked, utils, OccupiedEntry};
 
 /// A view into a vacant entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.
 ///
 /// [`Entry`]: crate::Entry
-pub struct VacantEntry<'a, K, V, B, const N: usize> {
+pub struct VacantEntry<'a, K, V, R: RawTable<(K, V)>, B: BuildHasher> {
     key: K,
-    table: &'a mut ArrayTable<(K, V), N>,
+    table: &'a mut R,
     build_hasher: &'a B,
+    _p: PhantomData<&'a (K, V)>,
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
+impl<'a, K, V, R: RawTable<(K, V)>, B: BuildHasher> VacantEntry<'a, K, V, R, B> {
     /// Constructs a new `VacantEntry`.
     ///
     /// # Safety
     ///
     /// There must be at least one vacant space in the table.
     #[must_use]
-    pub(crate) unsafe fn new(
-        table: &'a mut ArrayTable<(K, V), N>,
-        key: K,
-        build_hasher: &'a B,
-    ) -> Self {
+    pub(crate) unsafe fn new(table: &'a mut R, key: K, build_hasher: &'a B) -> Self {
         invariant!(table.len() < table.capacity());
         Self {
             key,
             table,
             build_hasher,
+            _p: PhantomData,
         }
     }
 
@@ -75,7 +74,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
     }
 }
 
-impl<'a, K: Hash, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N> {
+impl<'a, K: Hash, V, R: RawTable<(K, V)>, B: BuildHasher> VacantEntry<'a, K, V, R, B> {
     /// Inserts the entry’s key and the given value into the map, and returns a
     /// mutable reference to the value.
     ///
@@ -113,7 +112,7 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N>
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     #[must_use]
-    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, B, N> {
+    pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, R, B> {
         let ident = unsafe {
             let hash = utils::make_hash::<K, K, B>(self.build_hasher, self.key());
             let result = self.table.try_insert(
@@ -135,11 +134,12 @@ impl<'a, K: Hash, V, B: BuildHasher, const N: usize> VacantEntry<'a, K, V, B, N>
     }
 }
 
-impl<'a, K, V, B, const N: usize> fmt::Debug for VacantEntry<'a, K, V, B, N>
+impl<'a, K, V, R, B> fmt::Debug for VacantEntry<'a, K, V, R, B>
 where
     K: fmt::Debug,
     V: fmt::Debug,
     B: BuildHasher,
+    R: RawTable<(K, V)>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple(stringify!(VacantEntry))

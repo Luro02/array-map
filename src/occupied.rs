@@ -1,20 +1,20 @@
 use core::hash::{BuildHasher, Hash};
 use core::{fmt, mem};
 
-use crate::raw::{ArrayTable, RawTable, TableIndex};
+use crate::raw::RawTable;
 use crate::{utils, VacantEntry};
 
 /// A view into an occupied entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.
 ///
 /// [`Entry`]: crate::Entry
-pub struct OccupiedEntry<'a, K, V, B, const N: usize> {
-    table: &'a mut ArrayTable<(K, V), N>,
-    ident: TableIndex<N>,
+pub struct OccupiedEntry<'a, K, V, R: RawTable<(K, V)>, B: BuildHasher> {
+    table: &'a mut R,
+    ident: R::Ident,
     build_hasher: &'a B,
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
+impl<'a, K: 'a, V, R: RawTable<(K, V)>, B: BuildHasher> OccupiedEntry<'a, K, V, R, B> {
     /// Constructs a new `OccupiedEntry`.
     ///
     /// # Safety
@@ -25,11 +25,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     /// - `entries[index].is_some()` (otherwise the entry would not be occupied)
     /// - `len > 0` and `len <= N`
     #[must_use]
-    pub(crate) unsafe fn new(
-        table: &'a mut ArrayTable<(K, V), N>,
-        ident: TableIndex<N>,
-        build_hasher: &'a B,
-    ) -> Self {
+    pub(crate) unsafe fn new(table: &'a mut R, ident: R::Ident, build_hasher: &'a B) -> Self {
         Self {
             table,
             ident,
@@ -42,7 +38,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
         // SAFETY: self has exclusive access to the table, so self.ident is guranteed to
         //         be valid
         unsafe {
-            let (key, value) = self.table.get_unchecked(self.ident);
+            let (key, value) = self.table.get_unchecked(self.ident.clone());
             (key, value)
         }
     }
@@ -106,7 +102,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     pub fn get_mut(&mut self) -> &mut V {
         // SAFETY: self has exclusive access to the table, so self.ident is guranteed to
         //         be valid
-        unsafe { &mut self.table.get_unchecked_mut(self.ident).1 }
+        unsafe { &mut self.table.get_unchecked_mut(self.ident.clone()).1 }
     }
 
     /// Replaces the existing value with the provided value and returns the old
@@ -153,7 +149,7 @@ impl<'a, K, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
     pub fn into_mut(self) -> &'a mut V {
         // SAFETY: self has exclusive access to the table, so self.ident is guranteed to
         //         be valid
-        let (_, value) = unsafe { ArrayTable::<(K, V), N>::into_mut(self.table, self.ident) };
+        let (_, value) = unsafe { R::into_mut(self.table, self.ident) };
         value
     }
 }
@@ -169,7 +165,7 @@ trait DoubleEndedIteratorExt: DoubleEndedIterator {
 
 impl<D: DoubleEndedIterator> DoubleEndedIteratorExt for D {}
 
-impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V, B, N> {
+impl<'a, K: Hash + Eq, V, R: RawTable<(K, V)>, B: BuildHasher> OccupiedEntry<'a, K, V, R, B> {
     /// Removes the key value pair stored in the map for this entry and returns
     /// the value.
     ///
@@ -220,7 +216,7 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
         (vacant.into_key(), value)
     }
 
-    pub(crate) fn remove_entry_helper(self) -> (VacantEntry<'a, K, V, B, N>, V) {
+    pub(crate) fn remove_entry_helper(self) -> (VacantEntry<'a, K, V, R, B>, V) {
         // SAFETY: invariants are guarenteed by the constructor
         let (key, value) = unsafe {
             self.table
@@ -232,7 +228,7 @@ impl<'a, K: Hash + Eq, V, B: BuildHasher, const N: usize> OccupiedEntry<'a, K, V
     }
 }
 
-impl<'a, K, V, B, const N: usize> fmt::Debug for OccupiedEntry<'a, K, V, B, N>
+impl<'a, K, V, R: RawTable<(K, V)>, B> fmt::Debug for OccupiedEntry<'a, K, V, R, B>
 where
     K: fmt::Debug,
     V: fmt::Debug,
@@ -250,6 +246,7 @@ mod tests {
     use core::hash::{BuildHasherDefault, Hasher};
 
     use super::*;
+    use crate::raw::{ArrayTable, TableIndex};
     use pretty_assertions::assert_eq;
 
     // This hasher will always cause a collision
