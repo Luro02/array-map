@@ -1,7 +1,8 @@
 use core::fmt;
 use core::iter::FusedIterator;
 
-use crate::raw::{IntoImmutableIter, RawTableIter};
+use crate::ext::IntoImmutableIter;
+use crate::raw::RawTableIter;
 
 #[must_use]
 pub struct IterMut<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> {

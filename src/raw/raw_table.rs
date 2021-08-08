@@ -1,6 +1,6 @@
 use core::mem;
 
-use crate::raw::IntoImmutableIter;
+use crate::ext::IntoImmutableIter;
 use crate::UnavailableMutError;
 
 pub trait RawTable<T>: IntoIterator<Item = T> {

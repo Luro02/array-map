@@ -1,6 +1,6 @@
 use core::{iter, slice};
 
-use crate::raw::IntoImmutableIter;
+use crate::ext::IntoImmutableIter;
 
 pub struct IterMut<'a, T> {
     iter: slice::IterMut<'a, Option<T>>,
