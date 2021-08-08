@@ -1,7 +1,7 @@
 use core::fmt;
 use core::iter::FusedIterator;
 
-use crate::raw::{MutableIterator, RawTableIter};
+use crate::raw::{IntoImmutableIter, RawTableIter};
 
 #[must_use]
 pub struct IterMut<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> {
@@ -34,6 +34,21 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.iter.iter()).finish()
+    }
+}
+
+impl<'a, K: 'a, V: 'a, R> IntoImmutableIter<(K, V)> for IterMut<'a, K, V, R>
+where
+    R: RawTableIter<(K, V)>,
+{
+    type Iter<'b>
+    where
+        K: 'b,
+        V: 'b,
+    = <R::IterMut<'a> as IntoImmutableIter<(K, V)>>::Iter<'b>;
+
+    fn iter(&self) -> Self::Iter<'_> {
+        self.iter.iter()
     }
 }
 
