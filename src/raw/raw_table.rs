@@ -18,9 +18,6 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
     #[must_use]
     fn find(&self, hash: u64, eq: impl FnMut(&T) -> bool) -> Option<Self::Ident>;
 
-    #[must_use]
-    unsafe fn into_mut(self: &mut Self, ident: Self::Ident) -> &mut T;
-
     /// Returns a shared reference to the entry with the provided identifier.
     ///
     /// # Safety

@@ -111,14 +111,6 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
     type InsertError = CapacityError;
     type RawIter = iter::Flatten<array::IntoIter<Option<Self::Ident>, N>>;
 
-    unsafe fn into_mut(self: &mut Self, ident: Self::Ident) -> &mut T {
-        let index = ident.index();
-        invariant!(index < self.data.len());
-        invariant!(self.data[index].is_some());
-
-        unwrap_unchecked(self.data.get_unchecked_mut(index).as_mut())
-    }
-
     fn find(&self, hash: u64, mut eq: impl FnMut(&T) -> bool) -> Option<Self::Ident> {
         let index = utils::adjust_hash::<N>(hash);
 

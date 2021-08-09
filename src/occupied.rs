@@ -149,7 +149,7 @@ impl<'a, K: 'a, V, R: RawTable<(K, V)>, B: BuildHasher> OccupiedEntry<'a, K, V, 
     pub fn into_mut(self) -> &'a mut V {
         // SAFETY: self has exclusive access to the table, so self.ident is guranteed to
         //         be valid
-        let (_, value) = unsafe { R::into_mut(self.table, self.ident) };
+        let (_, value) = unsafe { R::get_unchecked_mut(self.table, self.ident) };
         value
     }
 }
