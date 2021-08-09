@@ -175,3 +175,8 @@ impl<T, const N: usize> ArrayExt<T, N> for [T; N] {
         R::from_output(result)
     }
 }
+
+#[must_use]
+pub(crate) fn none_array<T, const N: usize>() -> [Option<T>; N] {
+    [(); N].map(|_| None)
+}

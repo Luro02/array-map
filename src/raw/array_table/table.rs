@@ -208,7 +208,7 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
     }
 
     fn drain(&mut self) -> Self::DrainIter {
-        let data = mem::replace(&mut self.data, [(); N].map(|_| None));
+        let data = mem::replace(&mut self.data, utils::none_array());
         self.len = 0;
 
         DrainIter::new(data)
@@ -229,7 +229,7 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
     ) -> [Result<&mut T, UnavailableMutError>; M] {
         // if an entry is already borrowed then an index will be present, which points
         // to the mutable reference in the resulting array
-        let mut borrowed: [Option<usize>; N] = [(); N].map(|_| None);
+        let mut borrowed: [Option<usize>; N] = utils::none_array();
         // map each hash to it's index in the table (TableIndex):
         let table_indices = hashes
             .enumerate()
@@ -305,7 +305,7 @@ impl<T, const N: usize> IntoIterator for ArrayTable<T, N> {
 impl<T, const N: usize> Default for ArrayTable<T, N> {
     fn default() -> Self {
         Self {
-            data: [(); N].map(|_| None),
+            data: utils::none_array(),
             len: 0,
         }
     }
