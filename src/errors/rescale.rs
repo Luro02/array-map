@@ -31,3 +31,31 @@ impl<const N: usize, const M: usize> fmt::Display for RescaleError<N, M> {
         )
     }
 }
+
+#[cfg(all(test, feature = "alloc"))]
+mod tests {
+    use super::*;
+
+    use alloc::format;
+    use alloc::string::ToString;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_rescale_error_display() {
+        assert_eq!(
+            RescaleError::<6, 4>::new(5).to_string(),
+            concat!(
+                "failed to rescale the map of size `5` and capacity `6`,",
+                " because the new map can hold at most `4` elements",
+            )
+        );
+    }
+
+    #[test]
+    fn test_rescale_error_debug() {
+        assert_eq!(
+            format!("{:?}", RescaleError::<6, 4>::new(5)),
+            stringify!(RescaleError)
+        );
+    }
+}
