@@ -36,3 +36,6 @@ pub use entry::*;
 pub use errors::*;
 pub use occupied::*;
 pub use vacant::*;
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
