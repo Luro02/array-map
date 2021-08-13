@@ -1,5 +1,6 @@
 use core::borrow::Borrow;
 use core::hash::{BuildHasher, Hash};
+use core::marker::PhantomData;
 use core::ops::Index;
 use core::{fmt, mem};
 
@@ -8,26 +9,30 @@ use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::ext::{TryExtend, TryFromIterator};
 use crate::iter::{Drain, DrainFilter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
-use crate::raw::{ArrayTable, RawEntryBuilder, RawTable};
+use crate::raw::{ArrayTable, RawEntryBuilder, RawTable, RawTableIter};
 use crate::utils;
 use crate::vacant::VacantEntry;
 
-/// Default hasher for [`ArrayMap`].
+/// Default hasher for [`ArrayMapFacade`].
 #[cfg(feature = "ahash")]
 pub type DefaultHashBuilder = core::hash::BuildHasherDefault<ahash::AHasher>;
 /// Dummy default hasher
 #[cfg(not(feature = "ahash"))]
 pub enum DefaultHashBuilder {}
 
+pub type ArrayMap<K, V, const N: usize, B = DefaultHashBuilder> =
+    ArrayMapFacade<K, V, ArrayTable<(K, V), N>, B>;
+
 #[derive(Copy, Clone)]
-pub struct ArrayMap<K, V, const N: usize, B = DefaultHashBuilder> {
-    table: ArrayTable<(K, V), N>,
+pub struct ArrayMapFacade<K, V, R: RawTable<(K, V)>, B = DefaultHashBuilder> {
+    table: R,
     build_hasher: B,
+    _p: PhantomData<(K, V)>,
 }
 
 #[cfg(feature = "ahash")]
-impl<K, V, const N: usize> ArrayMap<K, V, N, DefaultHashBuilder> {
-    /// Creates an empty [`ArrayMap`] with the [`DefaultHashBuilder`].
+impl<K, V, R: RawTable<(K, V)> + Default> ArrayMapFacade<K, V, R, DefaultHashBuilder> {
+    /// Creates an empty [`ArrayMapFacade`] with the [`DefaultHashBuilder`].
     ///
     /// # Examples
     ///
@@ -42,8 +47,8 @@ impl<K, V, const N: usize> ArrayMap<K, V, N, DefaultHashBuilder> {
     }
 }
 
-impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
-    /// Creates an empty [`ArrayMap`] with the provided [`BuildHasher`].
+impl<K, V, R: RawTable<(K, V)> + Default, B: BuildHasher> ArrayMapFacade<K, V, R, B> {
+    /// Creates an empty [`ArrayMapFacade`] with the provided [`BuildHasher`].
     ///
     /// # Note
     ///
@@ -66,7 +71,7 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
         Self::with_build_hasher(build_hasher)
     }
 
-    /// Creates an empty [`ArrayMap`] with the provided [`BuildHasher`].
+    /// Creates an empty [`ArrayMapFacade`] with the provided [`BuildHasher`].
     ///
     /// # Examples
     ///
@@ -81,11 +86,14 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     #[doc(alias("with_hasher"))]
     pub fn with_build_hasher(build_hasher: B) -> Self {
         Self {
-            table: ArrayTable::default(),
+            table: R::default(),
             build_hasher,
+            _p: PhantomData,
         }
     }
+}
 
+impl<K, V, R: RawTable<(K, V)>, B: BuildHasher> ArrayMapFacade<K, V, R, B> {
     /// Returns the number of elements the map can hold in total.
     ///
     /// The returned value, will be equal to the const generic `N`.
@@ -103,7 +111,7 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     /// ```
     #[must_use]
     pub fn capacity(&self) -> usize {
-        N
+        self.table.capacity()
     }
 
     /// Returns the number of elements in the map.
@@ -164,9 +172,10 @@ impl<K, V, const N: usize, B: BuildHasher> ArrayMap<K, V, N, B> {
     }
 }
 
-impl<K, V, B, const N: usize> ArrayMap<K, V, N, B>
+impl<K, V, R, B> ArrayMapFacade<K, V, R, B>
 where
     K: Eq + Hash,
+    R: RawTable<(K, V)>,
     B: BuildHasher,
 {
     /// Gets the given key's corresponding entry in the map for in-place
@@ -192,10 +201,7 @@ where
     /// assert_eq!(letters.get(&'y'), None);
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn entry(
-        &mut self,
-        key: K,
-    ) -> Result<Entry<'_, K, V, ArrayTable<(K, V), N>, B>, CapacityError> {
+    pub fn entry(&mut self, key: K) -> Result<Entry<'_, K, V, R, B>, CapacityError> {
         let hash = utils::make_hash::<K, K, B>(&self.build_hasher, &key);
 
         if let Some(ident) = self.table.find(hash, |(k, _)| k.eq(&key)) {
@@ -639,7 +645,7 @@ where
     ///
     /// assert_eq!(drained, [None, None, None, Some(("rust", "rost")),]);
     /// ```
-    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, ArrayTable<(K, V), N>, B>
+    pub fn drain_filter<F>(&mut self, f: F) -> DrainFilter<'_, K, V, F, R, B>
     where
         F: FnMut(&K, &mut V) -> bool,
     {
@@ -672,7 +678,7 @@ where
     ///     ]
     /// );
     /// ```
-    pub fn drain(&mut self) -> Drain<'_, K, V, ArrayTable<(K, V), N>, B> {
+    pub fn drain(&mut self) -> Drain<'_, K, V, R, B> {
         Drain::new(&mut self.table, &self.build_hasher)
     }
 
@@ -701,11 +707,9 @@ where
     /// assert_eq!(rescaled.get(&'a'), Some(&('a' as u32)));
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn try_rescale<const M: usize>(
-        mut self,
-    ) -> Result<ArrayMap<K, V, M, B>, RescaleError<N, M>> {
+    pub fn try_rescale<const M: usize>(mut self) -> Result<ArrayMap<K, V, M, B>, RescaleError<M>> {
         if self.len() >= M {
-            return Err(RescaleError::new(self.len()));
+            return Err(RescaleError::new(self.len(), self.capacity()));
         }
 
         let mut result = ArrayMap::with_build_hasher(self.build_hasher);
@@ -778,16 +782,20 @@ where
     /// Immutable raw entries have a very limited use; you might instead want to
     /// use `ArrayMap::raw_entry_mut`.
     #[must_use]
-    pub fn raw_entry(&self) -> RawEntryBuilder<'_, K, V, ArrayTable<(K, V), N>, B> {
+    pub fn raw_entry(&self) -> RawEntryBuilder<'_, K, V, R, B> {
         RawEntryBuilder::new(&self.table, &self.build_hasher)
     }
 
-    pub(crate) fn into_parts(self) -> (B, <ArrayTable<(K, V), N> as IntoIterator>::IntoIter) {
+    pub(crate) fn into_parts(self) -> (B, <R as IntoIterator>::IntoIter) {
         (self.build_hasher, self.table.into_iter())
     }
 }
 
-impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
+impl<K, V, R, B> ArrayMapFacade<K, V, R, B>
+where
+    R: RawTableIter<(K, V)>,
+    B: BuildHasher,
+{
     /// Returns an iterator iterating over the immutable entries of the map.
     ///
     /// # Examples
@@ -816,7 +824,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// );
     /// # Ok::<_, CollectArrayError>(())
     /// ```
-    pub fn iter(&self) -> Iter<'_, K, V, ArrayTable<(K, V), N>> {
+    pub fn iter(&self) -> Iter<'_, K, V, R> {
         Iter::new(&self.table)
     }
 
@@ -850,7 +858,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     ///     }
     /// );
     /// ```
-    pub fn iter_mut(&mut self) -> IterMut<'_, K, V, ArrayTable<(K, V), N>> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V, R> {
         IterMut::new(&mut self.table)
     }
 
@@ -876,7 +884,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// assert_eq!(keys, [&"good bye", &"good night", &"hello",]);
     /// # Ok::<_, CollectArrayError>(())
     /// ```
-    pub fn keys(&self) -> Keys<'_, K, V, ArrayTable<(K, V), N>> {
+    pub fn keys(&self) -> Keys<'_, K, V, R> {
         Keys::new(self.iter())
     }
 
@@ -902,7 +910,7 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     /// assert_eq!(values, [&"au revoir", &"bonne nuit", &"salut",]);
     /// # Ok::<_, CollectArrayError>(())
     /// ```
-    pub fn values(&self) -> Values<'_, K, V, ArrayTable<(K, V), N>> {
+    pub fn values(&self) -> Values<'_, K, V, R> {
         Values::new(self.iter())
     }
 
@@ -937,15 +945,16 @@ impl<K, V, B: BuildHasher, const N: usize> ArrayMap<K, V, N, B> {
     ///     }
     /// );
     /// ```
-    pub fn values_mut(&mut self) -> ValuesMut<'_, K, V, ArrayTable<(K, V), N>> {
+    pub fn values_mut(&mut self) -> ValuesMut<'_, K, V, R> {
         ValuesMut::new(self.iter_mut())
     }
 }
 
-impl<K, Q: ?Sized, V, B, const N: usize> Index<&Q> for ArrayMap<K, V, N, B>
+impl<K, Q: ?Sized, V, R, B> Index<&Q> for ArrayMapFacade<K, V, R, B>
 where
     K: Eq + Hash + Borrow<Q>,
     Q: Eq + Hash,
+    R: RawTable<(K, V)>,
     B: BuildHasher,
 {
     type Output = V;
@@ -960,8 +969,12 @@ where
     }
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a ArrayMap<K, V, N, B> {
-    type IntoIter = Iter<'a, K, V, ArrayTable<(K, V), N>>;
+impl<'a, K, V, R, B> IntoIterator for &'a ArrayMapFacade<K, V, R, B>
+where
+    R: RawTableIter<(K, V)>,
+    B: BuildHasher,
+{
+    type IntoIter = Iter<'a, K, V, R>;
     type Item = (&'a K, &'a V);
 
     fn into_iter(self) -> Self::IntoIter {
@@ -969,8 +982,12 @@ impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a ArrayMap<K, 
     }
 }
 
-impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a mut ArrayMap<K, V, N, B> {
-    type IntoIter = IterMut<'a, K, V, ArrayTable<(K, V), N>>;
+impl<'a, K, V, R, B> IntoIterator for &'a mut ArrayMapFacade<K, V, R, B>
+where
+    R: RawTableIter<(K, V)>,
+    B: BuildHasher,
+{
+    type IntoIter = IterMut<'a, K, V, R>;
     type Item = (&'a K, &'a mut V);
 
     fn into_iter(self) -> Self::IntoIter {
@@ -978,8 +995,12 @@ impl<'a, K, V, B: BuildHasher, const N: usize> IntoIterator for &'a mut ArrayMap
     }
 }
 
-impl<K, V, B: BuildHasher, const N: usize> IntoIterator for ArrayMap<K, V, N, B> {
-    type IntoIter = <ArrayTable<(K, V), N> as IntoIterator>::IntoIter;
+impl<K, V, R, B> IntoIterator for ArrayMapFacade<K, V, R, B>
+where
+    R: RawTable<(K, V)>,
+    B: BuildHasher,
+{
+    type IntoIter = <R as IntoIterator>::IntoIter;
     type Item = (K, V);
 
     fn into_iter(self) -> Self::IntoIter {
@@ -987,26 +1008,33 @@ impl<K, V, B: BuildHasher, const N: usize> IntoIterator for ArrayMap<K, V, N, B>
     }
 }
 
-impl<K, V, B: BuildHasher + Default, const N: usize> Default for ArrayMap<K, V, N, B> {
+impl<K, V, R, B> Default for ArrayMapFacade<K, V, R, B>
+where
+    R: RawTable<(K, V)> + Default,
+    B: BuildHasher + Default,
+{
     fn default() -> Self {
         Self::with_hasher(B::default())
     }
 }
 
-impl<K, V, B: BuildHasher, const N: usize> fmt::Debug for ArrayMap<K, V, N, B>
+impl<K, V, R, B> fmt::Debug for ArrayMapFacade<K, V, R, B>
 where
     K: fmt::Debug,
     V: fmt::Debug,
+    R: RawTableIter<(K, V)>,
+    B: BuildHasher,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(self.iter()).finish()
     }
 }
 
-impl<K, V, B, const N: usize> PartialEq<Self> for ArrayMap<K, V, N, B>
+impl<K, V, R, B> PartialEq<Self> for ArrayMapFacade<K, V, R, B>
 where
     K: Eq + Hash,
     V: PartialEq,
+    R: RawTableIter<(K, V)>,
     B: BuildHasher,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -1019,23 +1047,25 @@ where
     }
 }
 
-impl<K, V, B, const N: usize> Eq for ArrayMap<K, V, N, B>
+impl<K, V, R, B> Eq for ArrayMapFacade<K, V, R, B>
 where
     K: Eq + Hash,
     V: PartialEq,
+    R: RawTableIter<(K, V)>,
     B: BuildHasher,
 {
 }
 
-impl<K, V, B, const N: usize> TryFromIterator<(K, V)> for ArrayMap<K, V, N, B>
+impl<K, V, R, B> TryFromIterator<(K, V)> for ArrayMapFacade<K, V, R, B>
 where
     K: Eq + Hash,
+    R: RawTable<(K, V)> + Default,
     B: BuildHasher + Default,
 {
     type Error = CapacityError;
 
     fn try_from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Result<Self, Self::Error> {
-        let mut result = ArrayMap::with_build_hasher(B::default());
+        let mut result = Self::with_build_hasher(B::default());
 
         for (key, value) in iter {
             result.insert(key, value)?;
@@ -1045,9 +1075,10 @@ where
     }
 }
 
-impl<K, V, B, const N: usize> TryExtend<(K, V)> for ArrayMap<K, V, N, B>
+impl<K, V, R, B> TryExtend<(K, V)> for ArrayMapFacade<K, V, R, B>
 where
     K: Eq + Hash,
+    R: RawTable<(K, V)>,
     B: BuildHasher,
 {
     type Error = CapacityError;
@@ -1061,10 +1092,11 @@ where
     }
 }
 
-impl<'a, K, V, B, const N: usize> TryExtend<(&'a K, &'a V)> for ArrayMap<K, V, N, B>
+impl<'a, K, V, R, B> TryExtend<(&'a K, &'a V)> for ArrayMapFacade<K, V, R, B>
 where
     K: Eq + Hash + Copy,
     V: Copy,
+    R: RawTable<(K, V)>,
     B: BuildHasher,
 {
     type Error = CapacityError;
