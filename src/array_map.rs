@@ -1288,6 +1288,57 @@ mod tests {
     }
 
     #[test]
+    fn test_linear_probing_stop_index() {
+        let mut map: ArrayMap<HasHash, usize, 5, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(2, 0) => 0,
+            HasHash(4, 1) => 1,
+            HasHash(4, 2) => 2,
+            HasHash(2, 3) => 4,
+            HasHash(0, 0) => 5,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.table,
+            ArrayTable::from_array([
+                Some((HasHash(4, 2), 2)), // 0
+                Some((HasHash(0, 0), 5)), // 1
+                Some((HasHash(2, 0), 0)), // 2
+                Some((HasHash(2, 3), 4)), // 3
+                Some((HasHash(4, 1), 1)), // 4
+            ])
+        );
+
+        assert_eq!(map.remove(&HasHash(2, 0)), Some(0));
+        assert_eq!(
+            map.table,
+            ArrayTable::from_array([
+                //
+                Some((HasHash(4, 2), 2)), // 0
+                Some((HasHash(0, 0), 5)), // 1
+                Some((HasHash(2, 3), 4)), // 2
+                None,                     // 3
+                Some((HasHash(4, 1), 1)), // 4
+            ])
+        );
+
+        assert_eq!(map.remove(&HasHash(4, 1)), Some(1));
+        assert_eq!(
+            map.table,
+            ArrayTable::from_array([
+                //
+                Some((HasHash(0, 0), 5)), // 0
+                None,                     // 1
+                Some((HasHash(2, 3), 4)), // 2
+                None,                     // 3
+                Some((HasHash(4, 2), 2)), // 4
+            ])
+        );
+    }
+
+    #[test]
     fn test_fuzzer_failure_00() {
         let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
             @infer,
