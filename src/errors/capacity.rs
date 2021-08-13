@@ -8,3 +8,16 @@ impl fmt::Display for CapacityError {
         write!(f, "not enough space")
     }
 }
+
+#[cfg(all(test, feature = "alloc"))]
+mod tests {
+    use super::*;
+
+    use alloc::string::ToString;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_capacity_error_display() {
+        assert_eq!(CapacityError.to_string(), "not enough space");
+    }
+}
