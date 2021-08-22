@@ -9,9 +9,9 @@ use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::ext::{TryExtend, TryFromIterator};
 use crate::iter::{Drain, DrainFilter, Iter, IterMut, Keys, Values, ValuesMut};
 use crate::occupied::OccupiedEntry;
-use crate::raw::{ArrayTable, RawEntryBuilder, RawTable, RawTableIter};
-use crate::utils;
+use crate::raw::{ArrayTable, FixedSizeTable, RawEntryBuilder, RawTable, RawTableIter};
 use crate::vacant::VacantEntry;
+use crate::{unreachable_unchecked, utils};
 
 /// Default hasher for [`ArrayMapFacade`].
 #[cfg(feature = "ahash")]
@@ -1054,6 +1054,25 @@ where
     R: RawTableIter<(K, V)>,
     B: BuildHasher,
 {
+}
+
+impl<K, V, R, B, const N: usize> From<[(K, V); N]> for ArrayMapFacade<K, V, R, B>
+where
+    K: Eq + Hash,
+    R: FixedSizeTable<(K, V), N> + Default,
+    B: BuildHasher + Default,
+{
+    fn from(value: [(K, V); N]) -> Self {
+        let mut result = Self::with_build_hasher(B::default());
+
+        for (key, value) in value {
+            if let Err(error) = result.insert(key, value) {
+                unreachable_unchecked!(error);
+            }
+        }
+
+        result
+    }
 }
 
 impl<K, V, R, B> TryFromIterator<(K, V)> for ArrayMapFacade<K, V, R, B>
