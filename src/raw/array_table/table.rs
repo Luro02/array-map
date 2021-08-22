@@ -3,7 +3,7 @@ use core::{array, fmt, iter, mem, slice};
 use super::{DrainIter, IterMut};
 
 use crate::errors::{CapacityError, UnavailableMutError};
-use crate::raw::{RawTable, RawTableIter, TableIndex};
+use crate::raw::{FixedSizeTable, RawTable, RawTableIter, TableIndex};
 use crate::utils::{self, unwrap_unchecked, ArrayExt, IterCircular};
 use crate::{invariant, unreachable_unchecked};
 
@@ -247,6 +247,8 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
         })
     }
 }
+
+impl<T, const N: usize> FixedSizeTable<T, N> for ArrayTable<T, N> {}
 
 impl<'a, T, const N: usize> IntoIterator for &'a ArrayTable<T, N> {
     type IntoIter = iter::Flatten<slice::Iter<'a, Option<T>>>;

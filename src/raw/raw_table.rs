@@ -153,3 +153,6 @@ pub trait RawTableIter<T>: RawTable<T> {
     /// Returns an immutable iterator over the table.
     fn iter(&self) -> Self::Iter<'_>;
 }
+
+/// A trait implemented by [`RawTable`]s with a fixed capacity.
+pub trait FixedSizeTable<T, const N: usize>: RawTable<T> {}
