@@ -707,12 +707,17 @@ where
     /// assert_eq!(rescaled.get(&'a'), Some(&('a' as u32)));
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn try_rescale<const M: usize>(mut self) -> Result<ArrayMap<K, V, M, B>, RescaleError<M>> {
+    pub fn try_rescale<T, const M: usize>(
+        mut self,
+    ) -> Result<ArrayMapFacade<K, V, T, B>, RescaleError<M>>
+    where
+        T: FixedSizeTable<(K, V), M> + Default,
+    {
         if self.len() >= M {
             return Err(RescaleError::new(self.len(), self.capacity()));
         }
 
-        let mut result = ArrayMap::with_build_hasher(self.build_hasher);
+        let mut result = ArrayMapFacade::with_build_hasher(self.build_hasher);
 
         for (key, value) in self.table.drain() {
             // explicitly ignore the result, because it can not fail (has been checked
