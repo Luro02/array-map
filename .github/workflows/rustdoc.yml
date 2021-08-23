@@ -35,4 +35,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: ./target/doc
+          cname: ${{ secrets.REPO_CNAME }}
           # keep_files: true
