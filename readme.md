@@ -9,6 +9,8 @@ array-map
 This crate provides an array based hashmap (`ArrayMap`), which works in a no-std environment and can be used if an upper bound
 for the number of keys in the map is known at compile-time.
 
+The crate requires the nightly compiler to be used, which is why it has not been published on [crates.io](https://crates.io/) yet.
+See [#2](https://github.com/Luro02/array-map/issues/2).
 
 ### Credits
 
