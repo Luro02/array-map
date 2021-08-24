@@ -72,6 +72,7 @@ macro_rules! unreachable_unchecked {
 /// # Safety
 ///
 /// `x` must be `true`
+#[doc(hidden)]
 #[macro_export]
 macro_rules! invariant {
     ($x:expr) => {{
