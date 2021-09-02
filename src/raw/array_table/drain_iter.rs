@@ -4,7 +4,7 @@ use core::array;
 pub struct DrainIter<T, const N: usize>(array::IntoIter<Option<T>, N>);
 
 impl<T, const N: usize> DrainIter<T, N> {
-    pub(super) fn new(data: [Option<T>; N]) -> Self {
+    pub(crate) fn new(data: [Option<T>; N]) -> Self {
         Self(array::IntoIter::new(data))
     }
 }
