@@ -113,7 +113,7 @@ impl<'a, K: Hash, V, R: RawTable<(K, V)>, B: BuildHasher> VacantEntry<'a, K, V, 
     /// ```
     #[must_use]
     pub fn insert_entry(self, value: V) -> OccupiedEntry<'a, K, V, R, B> {
-        let ident = unsafe {
+        let ident = {
             let hash = utils::make_hash::<K, K, B>(self.build_hasher, self.key());
             let result = self.table.try_insert(
                 hash,
@@ -123,13 +123,10 @@ impl<'a, K: Hash, V, R: RawTable<(K, V)>, B: BuildHasher> VacantEntry<'a, K, V, 
 
             match result {
                 Ok(ident) => ident,
-                // TODO: this relies on the assumption that insert will only error if there is not
-                // enough space!
                 Err(_) => unreachable_unchecked!("there must be free space for a vacant entry!"),
             }
         };
 
-        // TODO: merge this with the other unsafe block
         unsafe { OccupiedEntry::new(self.table, ident, self.build_hasher) }
     }
 }
