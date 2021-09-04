@@ -182,7 +182,7 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
         unsafe { Ok(TableIndex::new(index)) }
     }
 
-    fn iter(&self) -> Self::RawIter {
+    fn iter_idents(&self) -> Self::RawIter {
         let result = self.data.each_ref().enumerate().map(|(index, entry)| {
             // SAFETY: the entry is present, so the index points to an occupied entry and is
             //         less than N

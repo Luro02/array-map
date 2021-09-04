@@ -67,8 +67,9 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
         hasher: impl Fn(&T) -> u64,
     ) -> Result<Self::Ident, Self::InsertError>;
 
+    /// Returns an [`Iterator`] over the identifiers of all occupied entries.
     #[must_use]
-    fn iter(&self) -> Self::RawIter;
+    fn iter_idents(&self) -> Self::RawIter;
 
     /// Removes the entry associated with the ident from the table and returns
     /// it's value.
@@ -101,7 +102,7 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
     /// Returns the number of entries that are currently in the table.
     #[must_use]
     fn len(&self) -> usize {
-        self.iter().count()
+        self.iter_idents().count()
     }
 
     /// Returns `true` if the table is empty, `false` if it is not empty.

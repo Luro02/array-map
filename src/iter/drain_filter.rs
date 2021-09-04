@@ -34,7 +34,7 @@ where
     pub(crate) fn new(f: F, table: &'a mut R, build_hasher: &'a B) -> Self {
         Self {
             f,
-            iter: table.iter(),
+            iter: table.iter_idents(),
             table,
             build_hasher,
         }
