@@ -3,6 +3,7 @@ mod iter_circular;
 pub(crate) use iter_circular::*;
 
 use core::borrow::Borrow;
+use core::fmt;
 use core::hash::{BuildHasher, Hash, Hasher};
 use core::mem::MaybeUninit;
 use core::ops::Try;
@@ -121,18 +122,38 @@ pub(crate) fn unlikely(b: bool) -> bool {
     b
 }
 
-/// Converts an `Option<T>` into `T`.
-///
-/// # Safety
-///
-/// the `option` must be `Some(T)`
-#[must_use]
-pub(crate) unsafe fn unwrap_unchecked<T>(option: Option<T>) -> T {
-    if let Some(value) = option {
-        value
-    } else {
-        unreachable_unchecked!()
+pub trait UnwrapExpectExt<T> {
+    #[must_use]
+    unsafe fn expect_unchecked(self, msg: &str) -> T;
+}
+
+impl<T> UnwrapExpectExt<T> for Option<T> {
+    #[inline]
+    #[must_use]
+    unsafe fn expect_unchecked(self, msg: &str) -> T {
+        match self {
+            Some(x) => x,
+            None => unwrap_failed_unchecked(msg, &stringify!(None)),
+        }
     }
+}
+
+impl<T, E: fmt::Debug> UnwrapExpectExt<T> for Result<T, E> {
+    #[inline]
+    #[must_use]
+    unsafe fn expect_unchecked(self, msg: &str) -> T {
+        match self {
+            Ok(x) => x,
+            Err(e) => unwrap_failed_unchecked(msg, &e),
+        }
+    }
+}
+
+#[inline(never)]
+#[cold]
+#[track_caller]
+unsafe fn unwrap_failed_unchecked(msg: &str, error: &dyn fmt::Debug) -> ! {
+    unreachable_unchecked!("{}: {:?}", msg, error)
 }
 
 pub trait ArrayExt<T, const N: usize> {

@@ -4,7 +4,7 @@ use super::{DrainIter, IterMut};
 
 use crate::errors::{CapacityError, UnavailableMutError};
 use crate::raw::{FixedSizeTable, RawTable, RawTableIter, TableIndex};
-use crate::utils::{self, unwrap_unchecked, ArrayExt, IterCircular};
+use crate::utils::{self, ArrayExt, IterCircular, UnwrapExpectExt};
 use crate::{invariant, unreachable_unchecked};
 
 #[derive(Clone, Copy, PartialEq)]
@@ -136,7 +136,10 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
         invariant!(index < self.data.len());
         invariant!(self.data[index].is_some());
 
-        unwrap_unchecked(self.data.get_unchecked(index).as_ref())
+        self.data
+            .get_unchecked(index)
+            .as_ref()
+            .expect_unchecked("ident must point to occupied entry")
     }
 
     unsafe fn get_unchecked_mut(&mut self, ident: Self::Ident) -> &mut T {
@@ -144,12 +147,19 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
         invariant!(index < self.data.len());
         invariant!(self.data[index].is_some());
 
-        unwrap_unchecked(self.data.get_unchecked_mut(index).as_mut())
+        self.data
+            .get_unchecked_mut(index)
+            .as_mut()
+            .expect_unchecked("ident must point to occupied entry")
     }
 
     unsafe fn erase(&mut self, ident: Self::Ident) -> T {
         let index = ident.index();
-        let entry = unwrap_unchecked(self.data.get_unchecked_mut(index).take());
+        let entry = self
+            .data
+            .get_unchecked_mut(index)
+            .take()
+            .expect_unchecked("ident must point to occupied entry");
 
         entry
     }
