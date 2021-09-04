@@ -156,6 +156,7 @@
 <span id="156">156</span>
 <span id="157">157</span>
 <span id="158">158</span>
+<span id="159">159</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">core::mem</span>;
 
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ext::ToIter</span>;
@@ -225,8 +226,9 @@
         <span class="ident">hasher</span>: <span class="kw">impl</span> <span class="ident">Fn</span>(<span class="kw-2">&amp;</span><span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">u64</span>,
     ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident"><span class="self">Self</span>::Ident</span>, <span class="ident"><span class="self">Self</span>::InsertError</span><span class="op">&gt;</span>;
 
+    <span class="doccomment">/// Returns an [`Iterator`] over the identifiers of all occupied entries.</span>
     <span class="attribute">#[<span class="ident">must_use</span>]</span>
-    <span class="kw">fn</span> <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::RawIter</span>;
+    <span class="kw">fn</span> <span class="ident">iter_idents</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::RawIter</span>;
 
     <span class="doccomment">/// Removes the entry associated with the ident from the table and returns</span>
     <span class="doccomment">/// it&#39;s value.</span>
@@ -259,7 +261,7 @@
     <span class="doccomment">/// Returns the number of entries that are currently in the table.</span>
     <span class="attribute">#[<span class="ident">must_use</span>]</span>
     <span class="kw">fn</span> <span class="ident">len</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">iter</span>().<span class="ident">count</span>()
+        <span class="self">self</span>.<span class="ident">iter_idents</span>().<span class="ident">count</span>()
     }
 
     <span class="doccomment">/// Returns `true` if the table is empty, `false` if it is not empty.</span>
