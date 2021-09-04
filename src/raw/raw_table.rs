@@ -1,6 +1,6 @@
 use core::mem;
 
-use crate::ext::IntoImmutableIter;
+use crate::ext::ToIter;
 use crate::UnavailableMutError;
 
 pub trait RawTable<T>: IntoIterator<Item = T> {
@@ -140,7 +140,7 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
 }
 
 pub trait RawTableIter<T>: RawTable<T> {
-    type IterMut<'a>: IntoImmutableIter<T> + Iterator<Item = &'a mut T>
+    type IterMut<'a>: ToIter<T> + Iterator<Item = &'a mut T>
     where
         T: 'a;
     type Iter<'a>: Iterator<Item = &'a T>

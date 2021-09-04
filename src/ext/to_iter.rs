@@ -1,6 +1,6 @@
 use core::{array, slice};
 
-pub trait IntoImmutableIter<T> {
+pub trait ToIter<T> {
     type Iter<'b>: Iterator<Item = &'b T>
     where
         T: 'b;
@@ -10,7 +10,7 @@ pub trait IntoImmutableIter<T> {
     fn iter(&self) -> Self::Iter<'_>;
 }
 
-impl<'a, T> IntoImmutableIter<T> for slice::IterMut<'a, T> {
+impl<'a, T> ToIter<T> for slice::IterMut<'a, T> {
     type Iter<'b>
     where
         T: 'b,
@@ -21,7 +21,7 @@ impl<'a, T> IntoImmutableIter<T> for slice::IterMut<'a, T> {
     }
 }
 
-impl<T, const N: usize> IntoImmutableIter<T> for array::IntoIter<T, N> {
+impl<T, const N: usize> ToIter<T> for array::IntoIter<T, N> {
     type Iter<'b>
     where
         T: 'b,

@@ -1,7 +1,7 @@
 use core::fmt;
 use core::iter::FusedIterator;
 
-use crate::ext::IntoImmutableIter;
+use crate::ext::ToIter;
 use crate::raw::RawTableIter;
 
 use super::IterMut;
