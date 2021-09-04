@@ -1,13 +1,16 @@
-use core::iter::{self, FusedIterator};
-use core::ops::Range;
-use core::slice;
+use core::iter::FusedIterator;
+
+use crate::invariant;
+
+// start index + total length with wrapping?
+// this should make it possible to skip parts?
 
 #[must_use]
 pub(crate) struct IterCircular<'a, T> {
-    iter: iter::Chain<
-        iter::Zip<Range<usize>, slice::Iter<'a, T>>,
-        iter::Zip<Range<usize>, slice::Iter<'a, T>>,
-    >,
+    slice: &'a [T],
+    index: usize,
+    stop: usize,
+    exhausted: bool,
 }
 
 impl<'a, T> IterCircular<'a, T> {
@@ -15,10 +18,47 @@ impl<'a, T> IterCircular<'a, T> {
         assert!(start < slice.len());
 
         Self {
-            iter: (start..slice.len())
-                .zip(slice[start..].iter())
-                .chain((0..start).zip(slice[..start].iter())),
+            slice,
+            index: start,
+            stop: start,
+            exhausted: false,
         }
+    }
+
+    #[inline]
+    #[must_use]
+    fn distance_to(&self, destination: usize) -> usize {
+        if self.index > destination {
+            (self.slice.len() - self.index) + destination
+        } else {
+            destination - self.index
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    fn decrement_index_wrapping(&self, index: usize) -> usize {
+        if index == 0 {
+            self.slice.len() - 1
+        } else {
+            index - 1
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    fn increment_index_wrapping(&self, index: usize) -> usize {
+        if index + 1 == self.slice.len() {
+            0
+        } else {
+            index + 1
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    fn is_exhausted(&self) -> bool {
+        self.index == self.stop && self.exhausted
     }
 }
 
@@ -26,17 +66,38 @@ impl<'a, T> Iterator for IterCircular<'a, T> {
     type Item = (usize, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        if self.is_exhausted() {
+            return None;
+        }
+
+        let index = self.index;
+        invariant!(self.index < self.slice.len());
+        self.index = self.increment_index_wrapping(index);
+
+        if self.index == self.stop {
+            self.exhausted = true;
+        }
+
+        Some((index, &self.slice[index]))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        let distance = self.distance_to(self.stop);
+        (distance, Some(distance))
     }
 }
 
 impl<'a, T> DoubleEndedIterator for IterCircular<'a, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back()
+        if self.is_exhausted() {
+            return None;
+        }
+
+        self.stop = self.decrement_index_wrapping(self.stop);
+        if self.index == self.stop {
+            self.exhausted = true;
+        }
+        Some((self.stop, &self.slice[self.stop]))
     }
 }
 
