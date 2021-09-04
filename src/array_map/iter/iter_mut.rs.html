@@ -62,7 +62,7 @@
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">core::fmt</span>;
 <span class="kw">use</span> <span class="ident">core::iter::FusedIterator</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ext::IntoImmutableIter</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ext::ToIter</span>;
 <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::raw::RawTableIter</span>;
 
 <span class="attribute">#[<span class="ident">must_use</span>]</span>
@@ -99,7 +99,7 @@
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">K</span>: <span class="lifetime">&#39;a</span>, <span class="ident">V</span>: <span class="lifetime">&#39;a</span>, <span class="ident">R</span><span class="op">&gt;</span> <span class="ident">IntoImmutableIter</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">V</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">IterMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">R</span><span class="op">&gt;</span>
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">K</span>: <span class="lifetime">&#39;a</span>, <span class="ident">V</span>: <span class="lifetime">&#39;a</span>, <span class="ident">R</span><span class="op">&gt;</span> <span class="ident">ToIter</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">V</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">IterMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">R</span><span class="op">&gt;</span>
 <span class="kw">where</span>
     <span class="ident">R</span>: <span class="ident">RawTableIter</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">V</span>)<span class="op">&gt;</span>,
 {
@@ -107,7 +107,7 @@
     <span class="kw">where</span>
         <span class="ident">K</span>: <span class="lifetime">&#39;b</span>,
         <span class="ident">V</span>: <span class="lifetime">&#39;b</span>,
-    <span class="op">=</span> <span class="op">&lt;</span><span class="ident">R::IterMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">IntoImmutableIter</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">V</span>)<span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Iter</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span><span class="op">&gt;</span>;
+    <span class="op">=</span> <span class="op">&lt;</span><span class="ident">R::IterMut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="kw">as</span> <span class="ident">ToIter</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">V</span>)<span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::Iter</span><span class="op">&lt;</span><span class="lifetime">&#39;b</span><span class="op">&gt;</span>;
 
     <span class="kw">fn</span> <span class="ident">iter</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident"><span class="self">Self</span>::Iter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">iter</span>.<span class="ident">iter</span>()

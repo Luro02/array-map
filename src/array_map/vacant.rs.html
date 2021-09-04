@@ -144,9 +144,6 @@
 <span id="144">144</span>
 <span id="145">145</span>
 <span id="146">146</span>
-<span id="147">147</span>
-<span id="148">148</span>
-<span id="149">149</span>
 </pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">core::fmt</span>;
 <span class="kw">use</span> <span class="ident">core::hash</span>::{<span class="ident">BuildHasher</span>, <span class="ident">Hash</span>};
 <span class="kw">use</span> <span class="ident">core::marker::PhantomData</span>;
@@ -262,7 +259,7 @@
     <span class="doccomment">/// ```</span>
     <span class="attribute">#[<span class="ident">must_use</span>]</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">insert_entry</span>(<span class="self">self</span>, <span class="ident">value</span>: <span class="ident">V</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">OccupiedEntry</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="ident">K</span>, <span class="ident">V</span>, <span class="ident">R</span>, <span class="ident">B</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">ident</span> <span class="op">=</span> <span class="kw">unsafe</span> {
+        <span class="kw">let</span> <span class="ident">ident</span> <span class="op">=</span> {
             <span class="kw">let</span> <span class="ident">hash</span> <span class="op">=</span> <span class="ident">utils::make_hash</span>::<span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">K</span>, <span class="ident">B</span><span class="op">&gt;</span>(<span class="self">self</span>.<span class="ident">build_hasher</span>, <span class="self">self</span>.<span class="ident">key</span>());
             <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">try_insert</span>(
                 <span class="ident">hash</span>,
@@ -272,13 +269,10 @@
 
             <span class="kw">match</span> <span class="ident">result</span> {
                 <span class="prelude-val">Ok</span>(<span class="ident">ident</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="ident">ident</span>,
-                <span class="comment">// TODO: this relies on the assumption that insert will only error if there is not</span>
-                <span class="comment">// enough space!</span>
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="macro">unreachable_unchecked!</span>(<span class="string">&quot;there must be free space for a vacant entry!&quot;</span>),
             }
         };
 
-        <span class="comment">// TODO: merge this with the other unsafe block</span>
         <span class="kw">unsafe</span> { <span class="ident">OccupiedEntry::new</span>(<span class="self">self</span>.<span class="ident">table</span>, <span class="ident">ident</span>, <span class="self">self</span>.<span class="ident">build_hasher</span>) }
     }
 }
