@@ -5,10 +5,6 @@ use crate::ext::IteratorExt;
 use crate::raw::{ArrayTable, RawTable, RawTableIter, TableIndex};
 use crate::utils::{ArrayExt, UnwrapExpectExt};
 
-// TODO: replace DrainIter with it's own iterator?
-// TODO: implement RawTableIter for IndexTable
-// TODO: implement traits: Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord
-
 use super::{ArrayVec, FlatIter};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -20,12 +16,38 @@ pub struct IndexTable<T, const N: usize> {
 }
 
 impl<T, const N: usize> IndexTable<T, N> {
+    /// Removes an entry from the table, preserving the insertion order by
+    /// shifting all the following elements to the left.
     pub unsafe fn shift_remove(&mut self, ident: TableIndex<N>, hasher: impl Fn(&T) -> u64) -> T {
         let ident = self.indices.remove(ident, |ident| unsafe {
             hasher(self.entries.get_unchecked(*ident))
         });
 
         self.entries.remove_unchecked(ident)
+    }
+
+    /// Removes the last entry in the table if it is not empty.
+    pub fn pop(&mut self, hasher: impl Fn(&T) -> u64) -> Option<T> {
+        let entry = self.entries.pop()?;
+        // NOTE: an entry has been removed => len = index that the last element had
+        let index = unsafe { TableIndex::new(self.entries.len()) };
+        let hash = hasher(&entry);
+
+        unsafe {
+            // this is the ident pointing to the position where the entry is in the indices
+            // table
+            let ident = self.indices.find(hash, |e| index.eq(e))?;
+            self.indices.remove(ident, |idx| {
+                // the table might hash the removed entry:
+                if *idx == ident {
+                    hash
+                } else {
+                    hasher(self.entries.get_unchecked(*idx))
+                }
+            })
+        };
+
+        Some(entry)
     }
 }
 
