@@ -1,4 +1,5 @@
 mod array_table;
+mod index_table;
 mod raw_entry_builder;
 mod raw_table;
 mod table_index;
