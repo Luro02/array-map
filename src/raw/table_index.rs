@@ -1,6 +1,6 @@
 use crate::invariant;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TableIndex<const N: usize>(usize);
 
 impl<const N: usize> TableIndex<N> {
