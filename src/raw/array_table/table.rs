@@ -193,7 +193,7 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
             }
         });
 
-        array::IntoIter::new(result).flatten()
+        result.into_iter().flatten()
     }
 
     unsafe fn remove(&mut self, ident: Self::Ident, hasher: impl Fn(&T) -> u64) -> T {
@@ -302,7 +302,7 @@ impl<T, const N: usize> IntoIterator for ArrayTable<T, N> {
     type Item = T;
 
     fn into_iter(self) -> Self::IntoIter {
-        array::IntoIter::new(self.data).flatten()
+        self.data.into_iter().flatten()
     }
 }
 
