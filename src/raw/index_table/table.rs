@@ -79,7 +79,7 @@ impl<T, const N: usize> RawTable<T> for IndexTable<T, N> {
     fn iter_idents(&self) -> Self::RawIter {
         let values: [Option<TableIndex<N>>; N] =
             <ArrayTable<TableIndex<N>, N> as RawTableIter<TableIndex<N>>>::iter(&self.indices)
-                .cloned()
+                .copied()
                 .try_collect()
                 // TODO: remove this panic and test that this works correctly
                 .unwrap();
@@ -128,8 +128,7 @@ impl<T, const N: usize> RawTable<T> for IndexTable<T, N> {
                     let value = self.entries.get_unchecked(*ident);
                     eq(i, value)
                 })
-                // TODO: remove this clone?
-                .cloned()
+                .copied()
         });
 
         self.entries.get_each_mut_option(indices)
