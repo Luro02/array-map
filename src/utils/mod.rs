@@ -78,7 +78,11 @@ macro_rules! unreachable_unchecked {
 macro_rules! invariant {
     ($x:expr) => {{
         if !($x) {
-            $crate::unreachable_unchecked!();
+            $crate::unreachable_unchecked!(concat!(
+                "`",
+                stringify!($x),
+                "` must be true, but is not"
+            ));
         }
     }};
 }
