@@ -201,6 +201,10 @@
 <span id="201">201</span>
 <span id="202">202</span>
 <span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
 </pre><pre class="rust"><code><span class="kw">mod</span> <span class="ident">iter_circular</span>;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use</span> <span class="ident">iter_circular</span>::<span class="kw-2">*</span>;
@@ -281,12 +285,16 @@
 <span class="macro">macro_rules!</span> <span class="ident">invariant</span> {
     (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) <span class="op">=</span><span class="op">&gt;</span> {{
         <span class="kw">if</span> <span class="op">!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>) {
-            <span class="macro-nonterminal">$</span><span class="macro">crate::unreachable_unchecked!</span>();
+            <span class="macro-nonterminal">$</span><span class="macro">crate::unreachable_unchecked!</span>(<span class="macro">concat!</span>(
+                <span class="string">&quot;`&quot;</span>,
+                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>),
+                <span class="string">&quot;` must be true, but is not&quot;</span>
+            ));
         }
     }};
 }
 
-<span class="attribute">#[<span class="macro-nonterminal">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;nightly&quot;</span>))]</span>
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;nightly&quot;</span>))]</span>
 <span class="attribute">#[<span class="ident">cold</span>]</span>
 <span class="attribute">#[<span class="ident">inline</span>]</span>
 <span class="kw">fn</span> <span class="ident">cold</span>() {}
