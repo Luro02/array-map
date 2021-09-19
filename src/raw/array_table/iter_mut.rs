@@ -7,7 +7,7 @@ pub struct IterMut<'a, T> {
 }
 
 impl<'a, T> IterMut<'a, T> {
-    pub(super) fn new(iter: slice::IterMut<'a, Option<T>>) -> Self {
+    pub(crate) fn new(iter: slice::IterMut<'a, Option<T>>) -> Self {
         Self { iter }
     }
 }

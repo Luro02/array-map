@@ -124,12 +124,12 @@ pub(crate) fn unlikely(b: bool) -> bool {
 
 pub trait UnwrapExpectExt<T> {
     #[must_use]
+    #[track_caller]
     unsafe fn expect_unchecked(self, msg: &str) -> T;
 }
 
 impl<T> UnwrapExpectExt<T> for Option<T> {
     #[inline]
-    #[must_use]
     unsafe fn expect_unchecked(self, msg: &str) -> T {
         match self {
             Some(x) => x,
@@ -140,7 +140,6 @@ impl<T> UnwrapExpectExt<T> for Option<T> {
 
 impl<T, E: fmt::Debug> UnwrapExpectExt<T> for Result<T, E> {
     #[inline]
-    #[must_use]
     unsafe fn expect_unchecked(self, msg: &str) -> T {
         match self {
             Ok(x) => x,

@@ -24,3 +24,9 @@ name = "fuzz_probing"
 path = "fuzz_targets/fuzz_probing.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_indexmap"
+path = "fuzz_targets/fuzz_indexmap.rs"
+test = false
+doc = false

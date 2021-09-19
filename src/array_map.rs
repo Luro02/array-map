@@ -25,8 +25,8 @@ pub type ArrayMap<K, V, const N: usize, B = DefaultHashBuilder> =
 
 #[derive(Copy, Clone)]
 pub struct ArrayMapFacade<K, V, R: RawTable<(K, V)>, B = DefaultHashBuilder> {
-    table: R,
-    build_hasher: B,
+    pub(super) table: R,
+    pub(super) build_hasher: B,
     _p: PhantomData<(K, V)>,
 }
 

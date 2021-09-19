@@ -7,7 +7,7 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
     /// A type that uniquely identifes an occupied entry in the table.
     ///
     /// This ident must be valid until a value has been removed from the table.
-    type Ident: Clone;
+    type Ident: Clone + Eq;
     type InsertError;
     type RawIter: Iterator<Item = Self::Ident>;
     type DrainIter: Iterator<Item = T>;

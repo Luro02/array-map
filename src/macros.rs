@@ -56,6 +56,64 @@ macro_rules! array_map {
     };
 }
 
+#[macro_export]
+macro_rules! index_map {
+    // replaces `_t` with the provided expression `e`
+    (@replace $_t:tt $e:expr) => { $e };
+    // counts the number of tokens and returns a const expr
+    (@count $($x:expr),*) => {
+        <[()]>::len(&[$( $crate::index_map!(@replace $x ()) ),*])
+    };
+    // To support trailing commas in the macro
+    ( @infer, $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr, )+ ) => {
+        $crate::index_map!( @infer, $( @build_hasher => $bh, )? $( $key => $value ),+)
+    };
+    ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr, )+ ) => {
+        $crate::index_map!( $( @build_hasher => $bh, )? $( $key => $value ),+)
+    };
+    ( @helper_construct $bh:expr ) => {
+        $crate::IndexMap::with_build_hasher($bh)
+    };
+    ( @helper_construct ) => {
+        {
+            #[cfg(feature = "ahash")]
+            {
+                $crate::IndexMap::new()
+            }
+            #[cfg(not(feature = "ahash"))]
+            {
+                ::core::compile_error!("`ahash` feature is disabled, so a build_hasher must be specified explicitly!")
+            }
+        }
+    };
+    ( @infer, $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr ),* ) => {
+        {
+            let value: Result<_, $crate::CapacityError> = (|| {
+                let mut _map = $crate::index_map!( @helper_construct $( $bh )? );
+
+                $(
+                    _map.insert($key, $value)?;
+                )*
+
+                Ok(_map)
+            })();
+
+            value
+        }
+    };
+    ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr ),* ) => {
+        {
+            let _map: $crate::IndexMap<_, _, { $crate::index_map!(@count $($key),*) }, _> = $crate::index_map!(
+                @infer,
+                $( @build_hasher => $bh, )?
+                $( $key => $value ),*
+            ).expect("`index_map` macro does not count correctly!");
+
+            _map
+        }
+    };
+}
+
 #[cfg(all(test, feature = "ahash"))]
 mod tests {
     use pretty_assertions::assert_eq;

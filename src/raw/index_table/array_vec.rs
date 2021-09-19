@@ -12,7 +12,7 @@ use super::FlatIter;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ArrayVec<T, const N: usize> {
-    data: [Option<T>; N],
+    pub(super) data: [Option<T>; N],
     len: usize,
 }
 
@@ -76,14 +76,15 @@ impl<T, const N: usize> ArrayVec<T, N> {
         Some(value)
     }
 
-    /// Swaps the element at the given `index` with the last element in the
-    /// vector (if present).
-    pub fn swap_with_last(&mut self, index: TableIndex<N>) {
-        if self.is_empty() {
+    #[inline]
+    pub unsafe fn swap(&mut self, a: TableIndex<N>, b: TableIndex<N>) {
+        if self.is_empty() || a == b {
             return;
         }
 
-        self.data.swap(index.index(), self.len - 1)
+        invariant!(a.index() < self.data.len());
+        invariant!(b.index() < self.data.len());
+        self.data.swap(a.index(), b.index())
     }
 
     /// # Safety
@@ -94,26 +95,16 @@ impl<T, const N: usize> ArrayVec<T, N> {
     ///
     /// This completes in `O(n)` time.
     pub unsafe fn remove_unchecked(&mut self, index: TableIndex<N>) -> T {
-        let index = index.index();
-        invariant!(index < self.len());
+        invariant!(index.index() < self.len());
+        let mut last_index = index;
 
-        let value = self
-            .data
-            .get_unchecked_mut(index)
-            .take()
-            .expect_unchecked("index must be valid");
-
-        // fill in the slot of the removed element, by moving each one after it by one
-        // to the left
-
-        for index in index + 1..self.len() {
-            invariant!(index < N);
-            invariant!(index - 1 < N);
-            let current_value = self.data.get_unchecked_mut(index).take();
-            *self.data.get_unchecked_mut(index - 1) = current_value;
+        for index in index.index() + 1..self.len() {
+            let index = TableIndex::new(index);
+            self.swap(last_index, index);
+            last_index = index;
         }
 
-        value
+        self.pop().expect_unchecked("the vec must notb e empty")
     }
 
     /// Returns an immutable reference to the value at the given index.

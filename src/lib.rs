@@ -23,6 +23,7 @@ mod entry;
 mod errors;
 pub mod ext;
 mod external_trait_impls;
+mod index_map;
 pub mod iter;
 mod macros;
 mod occupied;
@@ -34,6 +35,7 @@ pub use crate::array_map::*;
 pub use array_map_ext::*;
 pub use entry::*;
 pub use errors::*;
+pub use index_map::*;
 pub use occupied::*;
 pub use vacant::*;
 
