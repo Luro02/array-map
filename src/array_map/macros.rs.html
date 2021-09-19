@@ -119,6 +119,64 @@
 <span id="119">119</span>
 <span id="120">120</span>
 <span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
 </pre><pre class="rust"><code><span class="attribute">#[<span class="ident">macro_export</span>]</span>
 <span class="macro">macro_rules!</span> <span class="ident">array_map</span> {
     <span class="comment">// replaces `_t` with the provided expression `e`</span>
@@ -171,6 +229,64 @@
                 $( @<span class="ident">build_hasher</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>, )<span class="question-mark">?</span>
                 $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> ),<span class="op">*</span>
             ).<span class="ident">expect</span>(<span class="string">&quot;`arraymap` macro does not count correctly!&quot;</span>);
+
+            <span class="ident">_map</span>
+        }
+    };
+}
+
+<span class="attribute">#[<span class="ident">macro_export</span>]</span>
+<span class="macro">macro_rules!</span> <span class="ident">index_map</span> {
+    <span class="comment">// replaces `_t` with the provided expression `e`</span>
+    (@<span class="ident">replace</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">_t</span>:<span class="ident">tt</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span>:<span class="ident">expr</span>) <span class="op">=</span><span class="op">&gt;</span> { <span class="macro-nonterminal">$</span><span class="macro-nonterminal">e</span> };
+    <span class="comment">// counts the number of tokens and returns a const expr</span>
+    (@<span class="ident">count</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>),<span class="kw-2">*</span>) <span class="op">=</span><span class="op">&gt;</span> {
+        <span class="op">&lt;</span>[()]<span class="op">&gt;</span><span class="ident">::len</span>(<span class="kw-2">&amp;</span>[$( <span class="macro-nonterminal">$</span><span class="macro">crate::index_map!</span>(@<span class="macro-nonterminal">replace</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span> ()) ),<span class="kw-2">*</span>])
+    };
+    <span class="comment">// To support trailing commas in the macro</span>
+    ( @<span class="ident">infer</span>, $( @<span class="ident">build_hasher</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>:<span class="ident">expr</span>, )<span class="question-mark">?</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span>:<span class="ident">expr</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">expr</span>, )<span class="op">+</span> ) <span class="op">=</span><span class="op">&gt;</span> {
+        <span class="macro-nonterminal">$</span><span class="macro">crate::index_map!</span>( @<span class="macro-nonterminal">infer</span>, $( @<span class="ident">build_hasher</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>, )<span class="question-mark">?</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> ),<span class="op">+</span>)
+    };
+    ( $( @<span class="ident">build_hasher</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>:<span class="ident">expr</span>, )<span class="question-mark">?</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span>:<span class="ident">expr</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">expr</span>, )<span class="op">+</span> ) <span class="op">=</span><span class="op">&gt;</span> {
+        <span class="macro-nonterminal">$</span><span class="macro">crate::index_map!</span>( $( @<span class="macro-nonterminal">build_hasher</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>, )<span class="question-mark">?</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> ),<span class="op">+</span>)
+    };
+    ( @<span class="ident">helper_construct</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>:<span class="ident">expr</span> ) <span class="op">=</span><span class="op">&gt;</span> {
+        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::IndexMap::with_build_hasher</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>)
+    };
+    ( @<span class="ident">helper_construct</span> ) <span class="op">=</span><span class="op">&gt;</span> {
+        {
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ahash&quot;</span>)]</span>
+            {
+                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::IndexMap::new</span>()
+            }
+            <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;ahash&quot;</span>))]</span>
+            {
+                <span class="macro">::core::compile_error!</span>(<span class="string">&quot;`ahash` feature is disabled, so a build_hasher must be specified explicitly!&quot;</span>)
+            }
+        }
+    };
+    ( @<span class="ident">infer</span>, $( @<span class="ident">build_hasher</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>:<span class="ident">expr</span>, )<span class="question-mark">?</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span>:<span class="ident">expr</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">expr</span> ),<span class="op">*</span> ) <span class="op">=</span><span class="op">&gt;</span> {
+        {
+            <span class="kw">let</span> <span class="ident">value</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::CapacityError</span><span class="op">&gt;</span> <span class="op">=</span> (<span class="op">|</span><span class="op">|</span> {
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">_map</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro">crate::index_map!</span>( @<span class="macro-nonterminal">helper_construct</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span> )<span class="question-mark">?</span> );
+
+                $(
+                    <span class="ident">_map</span>.<span class="ident">insert</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>)<span class="question-mark">?</span>;
+                )<span class="op">*</span>
+
+                <span class="prelude-val">Ok</span>(<span class="ident">_map</span>)
+            })();
+
+            <span class="ident">value</span>
+        }
+    };
+    ( $( @<span class="ident">build_hasher</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>:<span class="ident">expr</span>, )<span class="question-mark">?</span> $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span>:<span class="ident">expr</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span>:<span class="ident">expr</span> ),<span class="op">*</span> ) <span class="op">=</span><span class="op">&gt;</span> {
+        {
+            <span class="kw">let</span> <span class="ident">_map</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">crate::IndexMap</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span>, { <span class="macro-nonterminal">$</span><span class="macro">crate::index_map!</span>(@<span class="macro-nonterminal">count</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span>),<span class="kw-2">*</span>) }, <span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro-nonterminal">$</span><span class="macro">crate::index_map!</span>(
+                @<span class="macro-nonterminal">infer</span>,
+                $( @<span class="ident">build_hasher</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bh</span>, )<span class="question-mark">?</span>
+                $( <span class="macro-nonterminal">$</span><span class="macro-nonterminal">key</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">value</span> ),<span class="op">*</span>
+            ).<span class="ident">expect</span>(<span class="string">&quot;`index_map` macro does not count correctly!&quot;</span>);
 
             <span class="ident">_map</span>
         }
