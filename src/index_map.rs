@@ -1,7 +1,9 @@
 use core::borrow::Borrow;
 use core::fmt;
 use core::hash::{BuildHasher, Hash};
+use core::ops::{Bound, RangeBounds};
 
+use crate::iter::DrainRange;
 use crate::raw::{ArrayIndexTable, RawTable, TableIndex};
 use crate::utils::{self, UnwrapExpectExt};
 use crate::{ArrayMapFacade, DefaultHashBuilder};
@@ -370,6 +372,85 @@ where
 
         self.pop()
     }
+
+    /// Clears the map in the given index range, returning all entries in that
+    /// range as an iterator.
+    ///
+    /// This shifts down all the entries following the drained range to fill the
+    /// gap.
+    ///
+    /// # Panics
+    ///
+    /// If the starting point is greater than the end point of if the end point
+    /// is greater than the length of the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ext::IteratorExt;
+    /// use array_map::{index_map, IndexMap};
+    ///
+    /// let mut map: IndexMap<&str, &str, 11> = index_map! {
+    ///     @infer,
+    ///     "apple" => "apfel",
+    ///     "tree" => "baum",
+    ///     "cake" => "kuchen",
+    ///     "food" => "essen",
+    /// }?;
+    ///
+    /// assert_eq!(
+    ///     map.drain_range(1..3).try_collect::<[Option<_>; 4]>(),
+    ///     Ok([
+    ///         //
+    ///         Some(("tree", "baum")),
+    ///         Some(("cake", "kuchen")),
+    ///         None,
+    ///         None
+    ///     ])
+    /// );
+    ///
+    /// assert_eq!(
+    ///     map.iter().try_collect::<[Option<_>; 4]>(),
+    ///     Ok([
+    ///         Some((&"apple", &"apfel")),
+    ///         Some((&"food", &"essen")),
+    ///         None,
+    ///         None
+    ///     ])
+    /// );
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    ///
+    /// # Complexity
+    ///
+    /// O(n^2)
+    pub fn drain_range<R: RangeBounds<usize>>(&mut self, range: R) -> DrainRange<'_, K, V, B, N> {
+        let start = {
+            match range.start_bound() {
+                Bound::Included(index) => *index,
+                Bound::Excluded(index) => *index + 1,
+                Bound::Unbounded => 0,
+            }
+        };
+
+        let end = {
+            match range.end_bound() {
+                Bound::Included(index) => *index + 1,
+                Bound::Excluded(index) => *index,
+                Bound::Unbounded => self.len(),
+            }
+        };
+
+        if start > end {
+            panic!("start of range is greater than the end");
+        }
+
+        if end > self.len() {
+            panic!("end of range is out of bounds");
+        }
+
+        DrainRange::new(self, start..end)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -557,5 +638,125 @@ mod tests {
         );
 
         assert_eq!(map.get(&HasHash(2, 0)), Some(&2));
+    }
+
+    #[test]
+    fn test_drain_range() {
+        let mut map: IndexMap<&str, &str, 11> = index_map! {
+            @infer,
+            "apple" => "apfel",
+            "tree" => "baum",
+            "cake" => "kuchen",
+            "food" => "essen",
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.iter().try_collect::<[Option<_>; 4]>(),
+            Ok([
+                Some((&"apple", &"apfel")),
+                Some((&"tree", &"baum")),
+                Some((&"cake", &"kuchen")),
+                Some((&"food", &"essen")),
+            ])
+        );
+
+        assert_eq!(map.get_index_entry(0), Some((&"apple", &"apfel")));
+        assert_eq!(map.get_index_entry(1), Some((&"tree", &"baum")));
+        assert_eq!(map.get_index_entry(2), Some((&"cake", &"kuchen")));
+        assert_eq!(map.get_index_entry(3), Some((&"food", &"essen")));
+        assert_eq!(map.get_index_entry(4), None);
+
+        assert_eq!(
+            map.drain_range(1..3).try_collect::<[Option<_>; 4]>(),
+            Ok([
+                //
+                Some(("tree", "baum")),
+                Some(("cake", "kuchen")),
+                None,
+                None
+            ])
+        );
+
+        assert_eq!(
+            map.iter().try_collect::<[Option<_>; 4]>(),
+            Ok([
+                Some((&"apple", &"apfel")),
+                Some((&"food", &"essen")),
+                None,
+                None
+            ])
+        );
+    }
+
+    #[test]
+    fn test_drain_range_reverse_iter() {
+        let mut map: IndexMap<&str, &str, 11> = index_map! {
+            @infer,
+            "apple" => "apfel",
+            "tree" => "baum", // 1
+            "kitchen" => "küche",
+            "house" => "haus",
+            "chair" => "stuhl",
+            "dog" => "hund",
+            "cat" => "katze",
+            "mouse" => "maus", // 7
+            "cake" => "kuchen",
+            "food" => "essen",
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.drain_range(1..=7).rev().try_collect::<[Option<_>; 8]>(),
+            Ok([
+                //
+                Some(("mouse", "maus")),
+                Some(("cat", "katze")),
+                Some(("dog", "hund")),
+                Some(("chair", "stuhl")),
+                Some(("house", "haus")),
+                Some(("kitchen", "küche")),
+                Some(("tree", "baum")),
+                None,
+            ])
+        );
+
+        assert_eq!(
+            map.iter().try_collect::<[Option<_>; 4]>(),
+            Ok([
+                Some((&"apple", &"apfel")),
+                Some((&"cake", &"kuchen")),
+                Some((&"food", &"essen")),
+                None
+            ])
+        );
+    }
+
+    #[test]
+    fn test_drain_range_empty() {
+        let mut map: IndexMap<&str, &str, 11> = index_map! {
+            @infer,
+            "apple" => "apfel",
+            "cake" => "kuchen",
+            "food" => "essen",
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.drain_range(1..1).try_collect::<[Option<_>; 4]>(),
+            Ok([None, None, None, None])
+        );
+        assert_eq!(
+            map.drain_range(0..0).try_collect::<[Option<_>; 4]>(),
+            Ok([None, None, None, None])
+        );
+        assert_eq!(
+            map.drain_range(1..1).rev().try_collect::<[Option<_>; 4]>(),
+            Ok([None, None, None, None])
+        );
+        assert_eq!(
+            map.drain_range(0..0).rev().try_collect::<[Option<_>; 4]>(),
+            Ok([None, None, None, None])
+        );
     }
 }
