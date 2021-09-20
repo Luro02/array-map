@@ -184,19 +184,19 @@ where
     /// map.insert(2, "c")?;
     /// map.insert(3, "d")?;
     ///
-    /// assert_eq!(map.get_index_entry(0), Some((&0, &"a")));
-    /// assert_eq!(map.get_index_entry(3), Some((&3, &"d")));
-    /// assert_eq!(map.get_index_entry(4), None);
+    /// assert_eq!(map.get_entry_at(0), Some((&0, &"a")));
+    /// assert_eq!(map.get_entry_at(3), Some((&3, &"d")));
+    /// assert_eq!(map.get_entry_at(4), None);
     ///
     /// map.pop();
     ///
-    /// assert_eq!(map.get_index_entry(3), None);
-    /// assert_eq!(map.get_index_entry(2), Some((&2, &"c")));
+    /// assert_eq!(map.get_entry_at(3), None);
+    /// assert_eq!(map.get_entry_at(2), Some((&2, &"c")));
     ///
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     #[must_use]
-    pub fn get_index_entry(&self, index: usize) -> Option<(&K, &V)> {
+    pub fn get_entry_at(&self, index: usize) -> Option<(&K, &V)> {
         let (key, value) = self.table.get_index(index)?;
 
         Some((key, value))
@@ -218,19 +218,19 @@ where
     ///     "food" => "essen",
     /// }?;
     ///
-    /// if let Some(entry) = map.get_index_entry_mut(1) {
+    /// if let Some(entry) = map.get_entry_at_mut(1) {
     ///     assert_eq!(entry.0, &"tree");
     ///     assert_eq!(entry.1, &mut "baum");
     ///     *entry.1 = "bäumchen";
     /// }
     ///
-    /// assert_eq!(map.get_index_entry_mut(1), Some((&"tree", &mut "bäumchen")));
+    /// assert_eq!(map.get_entry_at_mut(1), Some((&"tree", &mut "bäumchen")));
     ///
-    /// assert_eq!(map.get_index_entry_mut(5), None);
+    /// assert_eq!(map.get_entry_at_mut(5), None);
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     #[must_use]
-    pub fn get_index_entry_mut(&mut self, index: usize) -> Option<(&K, &mut V)> {
+    pub fn get_entry_at_mut(&mut self, index: usize) -> Option<(&K, &mut V)> {
         let (key, value) = self.table.get_index_mut(index)?;
 
         Some((key, value))
@@ -255,13 +255,13 @@ where
     ///     "food" => "essen",
     /// }?;
     ///
-    /// assert_eq!(map.get_index_entry(1), Some((&"tree", &"baum")));
-    /// assert_eq!(map.get_index_entry(2), Some((&"cake", &"kuchen")));
+    /// assert_eq!(map.get_entry_at(1), Some((&"tree", &"baum")));
+    /// assert_eq!(map.get_entry_at(2), Some((&"cake", &"kuchen")));
     ///
     /// map.swap_indices(1, 2);
     ///
-    /// assert_eq!(map.get_index_entry(1), Some((&"cake", &"kuchen")));
-    /// assert_eq!(map.get_index_entry(2), Some((&"tree", &"baum")));
+    /// assert_eq!(map.get_entry_at(1), Some((&"cake", &"kuchen")));
+    /// assert_eq!(map.get_entry_at(2), Some((&"tree", &"baum")));
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     pub fn swap_indices(&mut self, a: usize, b: usize) {
@@ -288,13 +288,13 @@ where
     ///     "food" => "essen",
     /// }?;
     ///
-    /// assert_eq!(map.get_index_entry(1), Some((&"tree", &"baum")));
-    /// assert_eq!(map.get_index_entry(2), Some((&"cake", &"kuchen")));
+    /// assert_eq!(map.get_entry_at(1), Some((&"tree", &"baum")));
+    /// assert_eq!(map.get_entry_at(2), Some((&"cake", &"kuchen")));
     ///
     /// assert_eq!(map.try_swap_indices(1, 2), Ok(()));
     ///
-    /// assert_eq!(map.get_index_entry(1), Some((&"cake", &"kuchen")));
-    /// assert_eq!(map.get_index_entry(2), Some((&"tree", &"baum")));
+    /// assert_eq!(map.get_entry_at(1), Some((&"cake", &"kuchen")));
+    /// assert_eq!(map.get_entry_at(2), Some((&"tree", &"baum")));
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
     pub fn try_swap_indices(&mut self, a: usize, b: usize) -> Result<(), IndexOutOfBoundsError> {
@@ -460,7 +460,7 @@ where
     type Output = V;
 
     fn index(&self, index: usize) -> &Self::Output {
-        self.get_index_entry(index)
+        self.get_entry_at(index)
             .map(|entry| entry.1)
             .expect("index is out of bounds")
     }
@@ -674,11 +674,11 @@ mod tests {
             ])
         );
 
-        assert_eq!(map.get_index_entry(0), Some((&"apple", &"apfel")));
-        assert_eq!(map.get_index_entry(1), Some((&"tree", &"baum")));
-        assert_eq!(map.get_index_entry(2), Some((&"cake", &"kuchen")));
-        assert_eq!(map.get_index_entry(3), Some((&"food", &"essen")));
-        assert_eq!(map.get_index_entry(4), None);
+        assert_eq!(map.get_entry_at(0), Some((&"apple", &"apfel")));
+        assert_eq!(map.get_entry_at(1), Some((&"tree", &"baum")));
+        assert_eq!(map.get_entry_at(2), Some((&"cake", &"kuchen")));
+        assert_eq!(map.get_entry_at(3), Some((&"food", &"essen")));
+        assert_eq!(map.get_entry_at(4), None);
 
         assert_eq!(
             map.drain_range(1..3).try_collect::<[Option<_>; 4]>(),
