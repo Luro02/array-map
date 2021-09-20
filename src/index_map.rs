@@ -1,7 +1,7 @@
 use core::borrow::Borrow;
 use core::fmt;
 use core::hash::{BuildHasher, Hash};
-use core::ops::{Bound, RangeBounds};
+use core::ops::{Bound, Index, RangeBounds};
 
 use crate::iter::DrainRange;
 use crate::raw::{ArrayIndexTable, RawTable, TableIndex};
@@ -450,6 +450,19 @@ where
         }
 
         DrainRange::new(self, start..end)
+    }
+}
+
+impl<K, V, const N: usize, B: BuildHasher> Index<usize> for IndexMap<K, V, N, B>
+where
+    K: Hash + Eq,
+{
+    type Output = V;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.get_index_entry(index)
+            .map(|entry| entry.1)
+            .expect("index is out of bounds")
     }
 }
 
