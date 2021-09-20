@@ -265,6 +265,50 @@ where
         }
         Ok(())
     }
+
+    /// Removes the entry at the index or returns `None` if the index is out of
+    /// bounds by swapping it's position with the last element and then removing
+    /// it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ext::IteratorExt;
+    /// use array_map::{index_map, IndexMap};
+    ///
+    /// let mut map: IndexMap<&str, &str, 11> = index_map! {
+    ///     @infer,
+    ///     "apple" => "apfel",
+    ///     "tree" => "baum",
+    ///     "cake" => "kuchen",
+    ///     "food" => "essen",
+    /// }?;
+    ///
+    /// assert_eq!(map.swap_remove_index(1), Some(("tree", "baum")));
+    ///
+    /// assert_eq!(
+    ///     map.iter().try_collect::<[Option<_>; 3]>(),
+    ///     Ok([
+    ///         Some((&"apple", &"apfel")),
+    ///         Some((&"food", &"essen")),
+    ///         Some((&"cake", &"kuchen")),
+    ///     ])
+    /// );
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    ///
+    /// # Complexity
+    ///
+    /// O(1)
+    pub fn swap_remove_index(&mut self, index: usize) -> Option<(K, V)> {
+        if self.len() <= index || self.is_empty() {
+            return None;
+        }
+
+        self.try_swap_indices(index, self.len() - 1).ok()?;
+
+        self.pop()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
