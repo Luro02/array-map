@@ -84,6 +84,67 @@ where
         }
     }
 
+    /// Removes the entry at the index and shifts down all entries after it.
+    ///
+    /// This preserves the order of the entries.
+    ///
+    /// `None` is returned if the index is larger than the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::ext::IteratorExt;
+    /// use array_map::{index_map, IndexMap};
+    ///
+    /// let mut map: IndexMap<&str, &str, 11> = index_map! {
+    ///     @infer,
+    ///     "apple" => "apfel",
+    ///     "tree" => "baum",
+    ///     "cake" => "kuchen",
+    ///     "food" => "essen",
+    /// }?;
+    ///
+    /// assert_eq!(map.shift_remove_index(0), Some(("apple", "apfel")));
+    ///
+    /// assert_eq!(
+    ///     map.iter().try_collect::<[Option<_>; 3]>(),
+    ///     Ok([
+    ///         Some((&"tree", &"baum")),
+    ///         Some((&"cake", &"kuchen")),
+    ///         Some((&"food", &"essen")),
+    ///     ])
+    /// );
+    ///
+    /// assert_eq!(map.shift_remove_index(5), None);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    ///
+    /// # Complexity
+    ///
+    /// O(n)
+    pub fn shift_remove_index(&mut self, index: usize) -> Option<(K, V)> {
+        // SAFETY: it is checked that the index is less than `N`
+        //         (implied by `self.len()`)
+        let index = unsafe {
+            if index >= self.len() {
+                return None;
+            }
+
+            TableIndex::new(index)
+        };
+
+        // SAFETY: ident_from_index should always return a valid ident
+        unsafe {
+            let ident = self
+                .table
+                .ident_from_index(index, utils::key_hasher(&self.build_hasher))?;
+            Some(
+                self.table
+                    .shift_remove(ident, utils::key_hasher(&self.build_hasher)),
+            )
+        }
+    }
+
     /// Removes the last element from the map and returns it.
     ///
     /// # Examples
