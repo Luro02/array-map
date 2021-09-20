@@ -1,8 +1,10 @@
 use core::borrow::Borrow;
+use core::fmt;
 use core::hash::{BuildHasher, Hash};
 
-use crate::raw::{ArrayIndexTable, RawTable};
-use crate::{utils, ArrayMapFacade, DefaultHashBuilder};
+use crate::raw::{ArrayIndexTable, RawTable, TableIndex};
+use crate::utils::{self, UnwrapExpectExt};
+use crate::{ArrayMapFacade, DefaultHashBuilder};
 
 pub type IndexMap<K, V, const N: usize, B = DefaultHashBuilder> =
     ArrayMapFacade<K, V, ArrayIndexTable<(K, V), N>, B>;
@@ -137,11 +139,140 @@ where
         Some((key, value))
     }
 
+    /// Returns the entry at the index. If the index is larger than or equal to
+    /// the map's length, `None` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{index_map, IndexMap};
+    ///
+    /// let mut map: IndexMap<&str, &str, 11> = index_map! {
+    ///     @infer,
+    ///     "apple" => "apfel",
+    ///     "tree" => "baum",
+    ///     "cake" => "kuchen",
+    ///     "food" => "essen",
+    /// }?;
+    ///
+    /// if let Some(entry) = map.get_index_entry_mut(1) {
+    ///     assert_eq!(entry.0, &"tree");
+    ///     assert_eq!(entry.1, &mut "baum");
+    ///     *entry.1 = "bäumchen";
+    /// }
+    ///
+    /// assert_eq!(map.get_index_entry_mut(1), Some((&"tree", &mut "bäumchen")));
+    ///
+    /// assert_eq!(map.get_index_entry_mut(5), None);
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
     #[must_use]
     pub fn get_index_entry_mut(&mut self, index: usize) -> Option<(&K, &mut V)> {
         let (key, value) = self.table.get_index_mut(index)?;
 
         Some((key, value))
+    }
+
+    /// Swaps the position of the two entries `a` and `b`.
+    ///
+    /// # Panics
+    ///
+    /// If either `a` or `b` is out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{index_map, IndexMap};
+    ///
+    /// let mut map: IndexMap<&str, &str, 11> = index_map! {
+    ///     @infer,
+    ///     "apple" => "apfel",
+    ///     "tree" => "baum",
+    ///     "cake" => "kuchen",
+    ///     "food" => "essen",
+    /// }?;
+    ///
+    /// assert_eq!(map.get_index_entry(1), Some((&"tree", &"baum")));
+    /// assert_eq!(map.get_index_entry(2), Some((&"cake", &"kuchen")));
+    ///
+    /// map.swap_indices(1, 2);
+    ///
+    /// assert_eq!(map.get_index_entry(1), Some((&"cake", &"kuchen")));
+    /// assert_eq!(map.get_index_entry(2), Some((&"tree", &"baum")));
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn swap_indices(&mut self, a: usize, b: usize) {
+        self.try_swap_indices(a, b)
+            .expect("failed to swap indices, because either a or b is not in bounds")
+    }
+
+    /// Swaps the position of the two entries `a` and `b`.
+    ///
+    /// # Errors
+    ///
+    /// If either `a` or `b` is out of bounds.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use array_map::{index_map, IndexMap};
+    ///
+    /// let mut map: IndexMap<&str, &str, 11> = index_map! {
+    ///     @infer,
+    ///     "apple" => "apfel",
+    ///     "tree" => "baum",
+    ///     "cake" => "kuchen",
+    ///     "food" => "essen",
+    /// }?;
+    ///
+    /// assert_eq!(map.get_index_entry(1), Some((&"tree", &"baum")));
+    /// assert_eq!(map.get_index_entry(2), Some((&"cake", &"kuchen")));
+    ///
+    /// assert_eq!(map.try_swap_indices(1, 2), Ok(()));
+    ///
+    /// assert_eq!(map.get_index_entry(1), Some((&"cake", &"kuchen")));
+    /// assert_eq!(map.get_index_entry(2), Some((&"tree", &"baum")));
+    /// # Ok::<_, array_map::CapacityError>(())
+    /// ```
+    pub fn try_swap_indices(&mut self, a: usize, b: usize) -> Result<(), IndexOutOfBoundsError> {
+        if a >= self.table.len() {
+            return Err(IndexOutOfBoundsError(a));
+        }
+
+        if b >= self.table.len() {
+            return Err(IndexOutOfBoundsError(b));
+        }
+
+        let a = unsafe { TableIndex::new(a) };
+        let b = unsafe { TableIndex::new(b) };
+
+        // SAFETY: it has been verified that a is in bounds
+        let a = unsafe {
+            self.table
+                .ident_from_index(a, utils::key_hasher(&self.build_hasher))
+                .expect_unchecked("failed to get ident for index a")
+        };
+        // SAFETY: it has been verified that b is in bounds
+        let b = unsafe {
+            self.table
+                .ident_from_index(b, utils::key_hasher(&self.build_hasher))
+                .expect_unchecked("failed to get ident for index b")
+        };
+
+        // SAFETY: remove has not been called, so the idents are still valid
+        unsafe {
+            self.table.swap(a, b);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct IndexOutOfBoundsError(usize);
+
+impl fmt::Display for IndexOutOfBoundsError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "index `{}` is out of bounds", self.0)
     }
 }
 

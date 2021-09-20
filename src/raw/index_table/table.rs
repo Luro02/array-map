@@ -109,7 +109,11 @@ impl<T, R: FixedSizeTable<TableIndex<N>, N>, const N: usize> IndexTable<T, R, N>
     /// # Safety
     ///
     /// Both indices must be valid, which implies that this map is not empty.
-    unsafe fn swap(&mut self, a: <Self as RawTable<T>>::Ident, b: <Self as RawTable<T>>::Ident) {
+    pub unsafe fn swap(
+        &mut self,
+        a: <Self as RawTable<T>>::Ident,
+        b: <Self as RawTable<T>>::Ident,
+    ) {
         if a == b {
             return;
         }
@@ -128,6 +132,17 @@ impl<T, R: FixedSizeTable<TableIndex<N>, N>, const N: usize> IndexTable<T, R, N>
 
         // swap the entries in the entries vec:
         self.entries.swap(a_index, b_index);
+    }
+
+    #[must_use]
+    pub fn ident_from_index(
+        &self,
+        index: TableIndex<N>,
+        hasher: impl Fn(&T) -> u64,
+    ) -> Option<<Self as RawTable<T>>::Ident> {
+        let hash = hasher(self.get_index(index.index())?);
+
+        self.indices.find(hash, |other| other == &index)
     }
 }
 
