@@ -212,17 +212,15 @@ where
                     &self.build_hasher,
                 )))
             }
+        } else if self.table.len() == self.table.capacity() {
+            Err(CapacityError)
         } else {
-            if self.table.len() == self.table.capacity() {
-                Err(CapacityError)
-            } else {
-                unsafe {
-                    Ok(Entry::Vacant(VacantEntry::new(
-                        &mut self.table,
-                        key,
-                        &self.build_hasher,
-                    )))
-                }
+            unsafe {
+                Ok(Entry::Vacant(VacantEntry::new(
+                    &mut self.table,
+                    key,
+                    &self.build_hasher,
+                )))
             }
         }
     }
@@ -460,7 +458,7 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let hash = utils::make_hash::<K, Q, B>(&self.build_hasher, &qkey);
+        let hash = utils::make_hash::<K, Q, B>(&self.build_hasher, qkey);
         unsafe {
             if let Some(ident) = self.table.find(hash, |(k, _)| qkey.eq(k.borrow())) {
                 let entry = self

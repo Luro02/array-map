@@ -26,7 +26,7 @@ where
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = (&'_ K, &'_ V)> {
-        (self.index..(self.index + self.remaining)).flat_map(|index| self.map.get_entry_at(index))
+        (self.index..(self.index + self.remaining)).filter_map(|index| self.map.get_entry_at(index))
     }
 }
 

@@ -11,7 +11,7 @@ impl<const N: usize> TableIndex<N> {
     }
 
     #[must_use]
-    pub(crate) fn index(&self) -> usize {
+    pub(crate) const fn index(&self) -> usize {
         self.0
     }
 }

@@ -74,7 +74,7 @@ where
         K: Borrow<Q>,
         Q: Hash + Eq,
     {
-        let hash = utils::make_hash::<K, Q, B>(self.build_hasher(), &qkey);
+        let hash = utils::make_hash::<K, Q, B>(self.build_hasher(), qkey);
 
         unsafe {
             let ident = self.table.find(hash, |(k, _)| qkey.eq(k.borrow()))?;
@@ -266,7 +266,7 @@ where
     /// ```
     pub fn swap_indices(&mut self, a: usize, b: usize) {
         self.try_swap_indices(a, b)
-            .expect("failed to swap indices, because either a or b is not in bounds")
+            .expect("failed to swap indices, because either a or b is not in bounds");
     }
 
     /// Swaps the position of the two entries `a` and `b`.

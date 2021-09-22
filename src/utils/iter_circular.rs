@@ -27,7 +27,7 @@ impl<'a, T> IterCircular<'a, T> {
 
     #[inline]
     #[must_use]
-    fn distance_to(&self, destination: usize) -> usize {
+    const fn distance_to(&self, destination: usize) -> usize {
         if self.index > destination {
             (self.slice.len() - self.index) + destination
         } else {
@@ -37,7 +37,7 @@ impl<'a, T> IterCircular<'a, T> {
 
     #[inline]
     #[must_use]
-    fn decrement_index_wrapping(&self, index: usize) -> usize {
+    const fn decrement_index_wrapping(&self, index: usize) -> usize {
         if index == 0 {
             self.slice.len() - 1
         } else {
@@ -47,7 +47,7 @@ impl<'a, T> IterCircular<'a, T> {
 
     #[inline]
     #[must_use]
-    fn increment_index_wrapping(&self, index: usize) -> usize {
+    const fn increment_index_wrapping(&self, index: usize) -> usize {
         if index + 1 == self.slice.len() {
             0
         } else {
@@ -57,7 +57,7 @@ impl<'a, T> IterCircular<'a, T> {
 
     #[inline]
     #[must_use]
-    fn is_exhausted(&self) -> bool {
+    const fn is_exhausted(&self) -> bool {
         self.index == self.stop && self.exhausted
     }
 }

@@ -8,7 +8,7 @@ use crate::{invariant, utils};
 
 use super::FlatIter;
 
-/// A primitive implementation of an ArrayVec.
+/// A primitive implementation of an [`ArrayVec`].
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ArrayVec<T, const N: usize> {
@@ -84,7 +84,7 @@ impl<T, const N: usize> ArrayVec<T, N> {
 
         invariant!(a.index() < self.data.len());
         invariant!(b.index() < self.data.len());
-        self.data.swap(a.index(), b.index())
+        self.data.swap(a.index(), b.index());
     }
 
     /// # Safety
@@ -144,7 +144,7 @@ impl<T, const N: usize> ArrayVec<T, N> {
         let mut borrowed: [Option<usize>; N] = [(); N].map(|_| None);
 
         indices.enumerate().map(|(position, index)| {
-            let index = index.ok_or_else(|| UnavailableMutError::Absent)?.index();
+            let index = index.ok_or(UnavailableMutError::Absent)?.index();
 
             unsafe {
                 invariant!(index < data.len() && index < borrowed.len());

@@ -113,22 +113,16 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
 
     #[must_use]
     fn get(&self, hash: u64, eq: impl FnMut(&T) -> bool) -> Option<&T> {
-        if let Some(ident) = self.find(hash, eq) {
-            // SAFETY: remove has not been called after the ident has been created
-            Some(unsafe { self.get_unchecked(ident) })
-        } else {
-            None
-        }
+        let ident = self.find(hash, eq)?;
+        // SAFETY: remove has not been called after the ident has been created
+        Some(unsafe { self.get_unchecked(ident) })
     }
 
     #[must_use]
     fn get_mut(&mut self, hash: u64, eq: impl FnMut(&T) -> bool) -> Option<&mut T> {
-        if let Some(ident) = self.find(hash, eq) {
-            // SAFETY: remove has not been called after the ident has been created
-            Some(unsafe { self.get_unchecked_mut(ident) })
-        } else {
-            None
-        }
+        let ident = self.find(hash, eq)?;
+        // SAFETY: remove has not been called after the ident has been created
+        Some(unsafe { self.get_unchecked_mut(ident) })
     }
 
     /// This method is used to rediscover lost entries (can be caused by

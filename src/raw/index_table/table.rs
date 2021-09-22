@@ -175,14 +175,12 @@ impl<T, R: FixedSizeTable<TableIndex<N>, N>, const N: usize> RawTable<T> for Ind
 
     unsafe fn get_unchecked(&self, ident: Self::Ident) -> &T {
         let index = self.indices.get_unchecked(ident);
-        let value = self.entries.get_unchecked(*index);
-        value
+        self.entries.get_unchecked(*index)
     }
 
     unsafe fn get_unchecked_mut(&mut self, ident: Self::Ident) -> &mut T {
         let index = self.indices.get_unchecked(ident);
-        let value = self.entries.get_unchecked_mut(*index);
-        value
+        self.entries.get_unchecked_mut(*index)
     }
 
     unsafe fn erase(&mut self, ident: Self::Ident) -> T {
