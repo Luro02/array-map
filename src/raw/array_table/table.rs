@@ -25,7 +25,7 @@ impl<T, const N: usize> ArrayTable<T, N> {
     fn find_insert_slot(&self, hash: u64) -> Option<usize> {
         let index = utils::adjust_hash::<N>(hash);
 
-        IterCircular::new(index, &self.data).find_map(|(index, entry)| {
+        IterCircular::new(index, index, &self.data).find_map(|(index, entry)| {
             if entry.is_some() {
                 None
             } else {
@@ -53,11 +53,7 @@ impl<T, const N: usize> ArrayTable<T, N> {
 
         let mut last_entry_fill = None;
         // skip(1), so one does not check the vacant entry at index_to_fill
-        for (index, entry) in IterCircular::new(index_to_fill, &self.data).skip(1) {
-            if index == stop_index {
-                break;
-            }
-
+        for (index, entry) in IterCircular::new(index_to_fill, stop_index, &self.data).skip(1) {
             if let Some(entry) = entry {
                 let hash = hasher(entry);
                 let expected_index = utils::adjust_hash::<N>(hash);
@@ -114,7 +110,7 @@ impl<T, const N: usize> RawTable<T> for ArrayTable<T, N> {
     fn find(&self, hash: u64, mut eq: impl FnMut(&T) -> bool) -> Option<Self::Ident> {
         let index = utils::adjust_hash::<N>(hash);
 
-        for (index, entry) in IterCircular::new(index, &self.data) {
+        for (index, entry) in IterCircular::new(index, index, &self.data) {
             if let Some(entry) = entry.as_ref() {
                 if eq(entry) {
                     let table_index = unsafe {

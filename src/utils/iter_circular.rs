@@ -14,13 +14,13 @@ pub(crate) struct IterCircular<'a, T> {
 }
 
 impl<'a, T> IterCircular<'a, T> {
-    pub(crate) fn new(start: usize, slice: &'a [T]) -> Self {
-        assert!(start < slice.len());
+    pub(crate) fn new(start: usize, stop: usize, slice: &'a [T]) -> Self {
+        assert!(start < slice.len() && stop < slice.len());
 
         Self {
             slice,
             index: start,
-            stop: start,
+            stop,
             exhausted: false,
         }
     }
@@ -125,7 +125,8 @@ mod tests {
     #[test]
     fn test_circular_fixed() {
         assert_eq!(
-            IterCircular::new(0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).try_collect::<[Option<_>; 10]>(),
+            IterCircular::new(0, 0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+                .try_collect::<[Option<_>; 10]>(),
             Ok([
                 Some((0, &0)),
                 Some((1, &1)),
@@ -141,7 +142,8 @@ mod tests {
         );
 
         assert_eq!(
-            IterCircular::new(4, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).try_collect::<[Option<_>; 10]>(),
+            IterCircular::new(4, 4, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+                .try_collect::<[Option<_>; 10]>(),
             Ok([
                 Some((4, &4)),
                 Some((5, &5)),
@@ -160,7 +162,7 @@ mod tests {
     #[test]
     fn test_circular_fixed_reverse() {
         assert_eq!(
-            IterCircular::new(0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+            IterCircular::new(0, 0, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
                 .rev()
                 .try_collect::<[Option<_>; 10]>(),
             Ok([
@@ -178,7 +180,7 @@ mod tests {
         );
 
         assert_eq!(
-            IterCircular::new(4, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+            IterCircular::new(4, 4, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
                 .rev()
                 .try_collect::<[Option<_>; 10]>(),
             Ok([
@@ -201,7 +203,7 @@ mod tests {
         let array: [_; 100] = numbered_array();
 
         for i in 0..array.len() {
-            for (idx, value) in IterCircular::new(i, &array) {
+            for (idx, value) in IterCircular::new(i, i, &array) {
                 assert_eq!(&idx, value);
                 assert_eq!(&array[idx], value);
             }
@@ -213,11 +215,11 @@ mod tests {
         let array: [_; 100] = numbered_array();
 
         for i in 0..array.len() {
-            let values: [_; 100] = IterCircular::new(i, &array).try_collect().unwrap();
+            let values: [_; 100] = IterCircular::new(i, i, &array).try_collect().unwrap();
             let mut rvalues_expected = values.clone();
             rvalues_expected.reverse();
 
-            let rvalues: [_; 100] = IterCircular::new(i, &array).rev().try_collect().unwrap();
+            let rvalues: [_; 100] = IterCircular::new(i, i, &array).rev().try_collect().unwrap();
 
             assert_eq!(rvalues_expected, rvalues);
 
