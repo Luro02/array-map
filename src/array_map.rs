@@ -788,10 +788,6 @@ where
     pub fn raw_entry(&self) -> RawEntryBuilder<'_, K, V, R, B> {
         RawEntryBuilder::new(&self.table, &self.build_hasher)
     }
-
-    pub(crate) fn into_parts(self) -> (B, <R as IntoIterator>::IntoIter) {
-        (self.build_hasher, self.table.into_iter())
-    }
 }
 
 impl<K, V, R, B> ArrayMapFacade<K, V, R, B>
