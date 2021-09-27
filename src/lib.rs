@@ -18,7 +18,6 @@
 )]
 
 mod array_map;
-mod array_map_ext;
 mod entry;
 mod errors;
 pub mod ext;
@@ -32,7 +31,6 @@ mod utils;
 mod vacant;
 
 pub use crate::array_map::*;
-pub use array_map_ext::*;
 pub use entry::*;
 pub use errors::*;
 pub use index_map::*;
