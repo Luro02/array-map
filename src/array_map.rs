@@ -124,7 +124,7 @@ impl<K, V, R: RawTable<(K, V)>, B: BuildHasher> ArrayMapFacade<K, V, R, B> {
     /// let mut map: ArrayMap<u16, &str, 3> = ArrayMap::new();
     ///
     /// assert_eq!(map.len(), 0);
-    /// map.insert(1, "a");
+    /// map.try_insert(1, "a");
     /// assert_eq!(map.len(), 1);
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
@@ -144,7 +144,7 @@ impl<K, V, R: RawTable<(K, V)>, B: BuildHasher> ArrayMapFacade<K, V, R, B> {
     ///
     /// assert_eq!(map.is_empty(), true);
     ///
-    /// map.insert(1, "a")?;
+    /// map.try_insert(1, "a")?;
     /// assert_eq!(map.len(), 1);
     /// assert_eq!(map.is_empty(), false);
     /// # Ok::<_, array_map::CapacityError>(())
@@ -258,14 +258,19 @@ where
     /// assert_eq!(castles["Shimada Castle"], Status::Occupied);
     ///
     /// // you can also overwrite existing castles:
-    /// castles.insert("Anvil Castle", Status::Occupied);
+    /// castles.try_insert("Anvil Castle", Status::Occupied);
     ///
     /// let castle_entry = castles.entry("Anvil Castle")?;
     /// assert_eq!(castle_entry.insert(Status::Empty), Some(Status::Occupied));
     /// assert_eq!(castles["Anvil Castle"], Status::Empty);
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    pub fn insert(&mut self, key: K, value: V) -> Result<Option<V>, CapacityError> {
+    /// 
+    /// # Note
+    /// 
+    /// This is not the same as `HashMap::try_insert`, which errors if the value is already
+    /// present in the map.
+    pub fn try_insert(&mut self, key: K, value: V) -> Result<Option<V>, CapacityError> {
         Ok(self.entry(key)?.insert(value))
     }
 
@@ -281,7 +286,7 @@ where
     /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<i32, &str, 13> = ArrayMap::new();
-    /// map.insert(1, "a")?;
+    /// map.try_insert(1, "a")?;
     ///
     /// assert_eq!(map.get(&1), Some(&"a"));
     /// assert_eq!(map.get(&2), None);
@@ -309,7 +314,7 @@ where
     ///
     /// let mut map: ArrayMap<i32, &str, 13> = ArrayMap::new();
     ///
-    /// map.insert(1, "a")?;
+    /// map.try_insert(1, "a")?;
     ///
     /// if let Some(x) = map.get_mut(&1) {
     ///     *x = "b";
@@ -334,7 +339,7 @@ where
     /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<u32, &str, 3> = ArrayMap::new();
-    /// map.insert(1, "a");
+    /// map.try_insert(1, "a");
     /// assert_eq!(map.is_empty(), false);
     ///
     /// map.clear();
@@ -357,7 +362,7 @@ where
     ///
     /// let mut map: ArrayMap<i32, &str, 3> = ArrayMap::new();
     ///
-    /// map.insert(1, "a")?;
+    /// map.try_insert(1, "a")?;
     /// assert_eq!(map.contains_key(&1), true);
     /// assert_eq!(map.contains_key(&2), false);
     /// # Ok::<_, array_map::CapacityError>(())
@@ -382,7 +387,7 @@ where
     /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<i32, &str, 13> = ArrayMap::new();
-    /// map.insert(1, "a")?;
+    /// map.try_insert(1, "a")?;
     ///
     /// assert_eq!(map.get_key_value(&1), Some((&1, &"a")));
     /// assert_eq!(map.get_key_value(&2), None);
@@ -411,7 +416,7 @@ where
     /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<i32, &str, 13> = ArrayMap::new();
-    /// map.insert(1, "a")?;
+    /// map.try_insert(1, "a")?;
     ///
     /// let (k, v) = map.get_key_value_mut(&1).unwrap();
     /// assert_eq!(k, &1);
@@ -448,7 +453,7 @@ where
     ///
     /// let mut map: ArrayMap<i32, &str, 3> = ArrayMap::new();
     ///
-    /// map.insert(1, "a")?;
+    /// map.try_insert(1, "a")?;
     /// assert_eq!(map.remove_entry(&1), Some((1, "a")));
     /// assert_eq!(map.remove_entry(&1), None);
     /// # Ok::<_, array_map::CapacityError>(())
@@ -485,7 +490,7 @@ where
     ///
     /// let mut map: ArrayMap<i32, &str, 3> = ArrayMap::new();
     ///
-    /// map.insert(1, "a")?;
+    /// map.try_insert(1, "a")?;
     /// assert_eq!(map.remove(&1), Some("a"));
     /// assert_eq!(map.remove(&1), None);
     /// # Ok::<_, array_map::CapacityError>(())
@@ -515,10 +520,10 @@ where
     ///
     /// let mut libraries: ArrayMap<&str, usize, 19> = ArrayMap::new();
     ///
-    /// libraries.insert("Bodleian Library", 1602)?;
-    /// libraries.insert("Athenæum", 1807)?;
-    /// libraries.insert("Herzogin-Anna-Amalia-Bibliothek", 1691)?;
-    /// libraries.insert("Library of Congress", 1800)?;
+    /// libraries.try_insert("Bodleian Library", 1602)?;
+    /// libraries.try_insert("Athenæum", 1807)?;
+    /// libraries.try_insert("Herzogin-Anna-Amalia-Bibliothek", 1691)?;
+    /// libraries.try_insert("Library of Congress", 1800)?;
     ///
     /// let got = libraries.get_each_key_value_mut([
     ///     "Bodleian Library",
@@ -572,10 +577,10 @@ where
     /// use array_map::{ArrayMap, UnavailableMutError};
     ///
     /// let mut libraries: ArrayMap<&str, usize, 19> = ArrayMap::new();
-    /// libraries.insert("Bodleian Library", 1602)?;
-    /// libraries.insert("Athenæum", 1807)?;
-    /// libraries.insert("Herzogin-Anna-Amalia-Bibliothek", 1691)?;
-    /// libraries.insert("Library of Congress", 1800)?;
+    /// libraries.try_insert("Bodleian Library", 1602)?;
+    /// libraries.try_insert("Athenæum", 1807)?;
+    /// libraries.try_insert("Herzogin-Anna-Amalia-Bibliothek", 1691)?;
+    /// libraries.try_insert("Library of Congress", 1800)?;
     ///
     /// let got = libraries.get_each_value_mut([
     ///     "Athenæum",
@@ -694,7 +699,7 @@ where
     ///
     /// let mut map: ArrayMap<char, u32, 1> = ArrayMap::new();
     ///
-    /// map.insert('a', 'a' as u32)?;
+    /// map.try_insert('a', 'a' as u32)?;
     ///
     /// // no more values can be inserted
     ///
@@ -720,7 +725,7 @@ where
         for (key, value) in self.table.drain() {
             // explicitly ignore the result, because it can not fail (has been checked
             // before the loop)
-            mem::drop(result.insert(key, value));
+            mem::drop(result.try_insert(key, value));
         }
 
         Ok(result)
@@ -740,11 +745,11 @@ where
     /// let mut map: ArrayMap<char, u32, { 26 + 10 }> = ArrayMap::new();
     ///
     /// for c in 'a'..='z' {
-    ///     map.insert(c, c as u32)?;
+    ///     map.try_insert(c, c as u32)?;
     /// }
     ///
     /// for c in '0'..='9' {
-    ///     map.insert(c, c as u32)?;
+    ///     map.try_insert(c, c as u32)?;
     /// }
     ///
     /// // only keep chars that are not digits:
@@ -1065,7 +1070,7 @@ where
         let mut result = Self::with_build_hasher(B::default());
 
         for (key, value) in value {
-            if let Err(error) = result.insert(key, value) {
+            if let Err(error) = result.try_insert(key, value) {
                 unreachable_unchecked!(error);
             }
         }
@@ -1086,7 +1091,7 @@ where
         let mut result = Self::with_build_hasher(B::default());
 
         for (key, value) in iter {
-            result.insert(key, value)?;
+            result.try_insert(key, value)?;
         }
 
         Ok(result)
@@ -1103,7 +1108,7 @@ where
 
     fn try_extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) -> Result<(), Self::Error> {
         for (key, value) in iter {
-            self.insert(key, value)?;
+            self.try_insert(key, value)?;
         }
 
         Ok(())
@@ -1138,8 +1143,8 @@ mod tests {
     fn test_insert() {
         let mut map = ArrayMap::<_, _, 2>::new();
 
-        assert_eq!(map.insert("hello", "world"), Ok(None));
-        assert_eq!(map.insert("other", "world2"), Ok(None));
+        assert_eq!(map.try_insert("hello", "world"), Ok(None));
+        assert_eq!(map.try_insert("other", "world2"), Ok(None));
         assert_eq!(map.get("hello"), Some(&"world"));
         assert_eq!(map.get("other"), Some(&"world2"));
     }
@@ -1148,10 +1153,10 @@ mod tests {
     #[test]
     fn test_get_each_mut() {
         let mut map: ArrayMap<_, _, 19> = ArrayMap::new();
-        map.insert("foo", 0).unwrap();
-        map.insert("bar", 10).unwrap();
-        map.insert("baz", 20).unwrap();
-        map.insert("qux", 30).unwrap();
+        map.try_insert("foo", 0).unwrap();
+        map.try_insert("bar", 10).unwrap();
+        map.try_insert("baz", 20).unwrap();
+        map.try_insert("qux", 30).unwrap();
 
         let ys = map.get_each_key_value_mut(["bar", "baz", "baz", "dip"]);
         assert_eq!(

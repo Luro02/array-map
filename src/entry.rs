@@ -119,7 +119,7 @@ impl<'a, K: Hash, V, R: RawTable<(K, V)>, B: BuildHasher> Entry<'a, K, V, R, B> 
     /// assert_eq!(castles["Shimada Castle"], Status::Occupied);
     ///
     /// // you can also overwrite existing castles:
-    /// castles.insert("Anvil Castle", Status::Occupied);
+    /// castles.try_insert("Anvil Castle", Status::Occupied);
     ///
     /// let castle_entry = castles.entry("Anvil Castle")?;
     /// assert_eq!(castle_entry.insert(Status::Empty), Some(Status::Occupied));

@@ -26,9 +26,9 @@ where
     ///
     /// let mut map: IndexMap<&str, &str, 11> = IndexMap::new();
     ///
-    /// map.insert("a", "b")?;
-    /// map.insert("c", "d")?;
-    /// map.insert("e", "f")?;
+    /// map.try_insert("a", "b")?;
+    /// map.try_insert("c", "d")?;
+    /// map.try_insert("e", "f")?;
     ///
     /// map.truncate(1);
     /// assert_eq!(map.pop(), Some(("a", "b")));
@@ -52,10 +52,10 @@ where
     ///
     /// let mut map: IndexMap<i32, &str, 7> = IndexMap::new();
     ///
-    /// map.insert(1, "a")?;
-    /// map.insert(2, "b")?;
-    /// map.insert(3, "c")?;
-    /// map.insert(4, "d")?;
+    /// map.try_insert(1, "a")?;
+    /// map.try_insert(2, "b")?;
+    /// map.try_insert(3, "c")?;
+    /// map.try_insert(4, "d")?;
     ///
     /// assert_eq!(map.shift_remove_entry(&1), Some((1, "a")));
     /// assert_eq!(map.shift_remove_entry(&1), None);
@@ -156,9 +156,9 @@ where
     ///
     /// let mut map: IndexMap<&str, &str, 11> = IndexMap::new();
     ///
-    /// map.insert("a", "b")?;
-    /// map.insert("c", "d")?;
-    /// map.insert("e", "f")?;
+    /// map.try_insert("a", "b")?;
+    /// map.try_insert("c", "d")?;
+    /// map.try_insert("e", "f")?;
     ///
     /// assert_eq!(map.pop(), Some(("e", "f")));
     /// assert_eq!(map.pop(), Some(("c", "d")));
@@ -179,10 +179,10 @@ where
     /// use array_map::IndexMap;
     ///
     /// let mut map: IndexMap<usize, &str, 11> = IndexMap::new();
-    /// map.insert(0, "a")?;
-    /// map.insert(1, "b")?;
-    /// map.insert(2, "c")?;
-    /// map.insert(3, "d")?;
+    /// map.try_insert(0, "a")?;
+    /// map.try_insert(1, "b")?;
+    /// map.try_insert(2, "c")?;
+    /// map.try_insert(3, "d")?;
     ///
     /// assert_eq!(map.get_entry_at(0), Some((&0, &"a")));
     /// assert_eq!(map.get_entry_at(3), Some((&3, &"d")));
@@ -487,12 +487,12 @@ mod tests {
     #[test]
     fn test_pop() {
         let mut map: IndexMap<&str, &str, 7> = IndexMap::new();
-        map.insert("a", "a").unwrap();
-        map.insert("b", "b").unwrap();
-        map.insert("c", "c").unwrap();
-        map.insert("d", "d").unwrap();
-        map.insert("e", "e").unwrap();
-        map.insert("f", "f").unwrap();
+        map.try_insert("a", "a").unwrap();
+        map.try_insert("b", "b").unwrap();
+        map.try_insert("c", "c").unwrap();
+        map.try_insert("d", "d").unwrap();
+        map.try_insert("e", "e").unwrap();
+        map.try_insert("f", "f").unwrap();
 
         assert_eq!(map.pop(), Some(("f", "f")));
         assert_eq!(map.pop(), Some(("e", "e")));

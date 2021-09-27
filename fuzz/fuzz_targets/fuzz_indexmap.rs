@@ -67,7 +67,7 @@ fuzz_target!(|data: [(HasHash<CAPACITY>, usize); INPUT_SIZE]| {
     let mut hash_map = HashMap::with_capacity_and_hasher(CAPACITY, CustomHasher::default());
 
     for (key, value) in core::array::IntoIter::new(data) {
-        map.insert(key, value).unwrap();
+        map.try_insert(key, value).unwrap();
         hash_map.insert(key, value);
     }
 

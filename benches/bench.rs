@@ -44,7 +44,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     },
                     |(mut iter, mut map)| {
                         let (k, v) = iter.next().unwrap();
-                        map.insert(k, v).unwrap();
+                        map.try_insert(k, v).unwrap();
                     },
                     BatchSize::SmallInput,
                 );

@@ -34,7 +34,7 @@ macro_rules! array_map {
                 let mut _map = $crate::array_map!( @helper_construct $( $bh )? );
 
                 $(
-                    _map.insert($key, $value)?;
+                    _map.try_insert($key, $value)?;
                 )*
 
                 Ok(_map)
@@ -92,7 +92,7 @@ macro_rules! index_map {
                 let mut _map = $crate::index_map!( @helper_construct $( $bh )? );
 
                 $(
-                    _map.insert($key, $value)?;
+                    _map.try_insert($key, $value)?;
                 )*
 
                 Ok(_map)
@@ -139,10 +139,10 @@ mod tests {
         assert_eq!(map, {
             let mut map = crate::ArrayMap::new();
 
-            map.insert("key_00", "value_00").unwrap();
-            map.insert("key_01", "value_00").unwrap();
-            map.insert("key_02", "value_00").unwrap();
-            map.insert("key_03", "value_00").unwrap();
+            map.try_insert("key_00", "value_00").unwrap();
+            map.try_insert("key_01", "value_00").unwrap();
+            map.try_insert("key_02", "value_00").unwrap();
+            map.try_insert("key_03", "value_00").unwrap();
 
             map
         });

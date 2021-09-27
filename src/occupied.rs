@@ -175,7 +175,7 @@ impl<'a, K: Hash + Eq, V, R: RawTable<(K, V)>, B: BuildHasher> OccupiedEntry<'a,
     /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
-    /// map.insert("good", "job")?;
+    /// map.try_insert("good", "job")?;
     ///
     /// assert_eq!(map.contains_key("good"), true);
     ///
@@ -199,7 +199,7 @@ impl<'a, K: Hash + Eq, V, R: RawTable<(K, V)>, B: BuildHasher> OccupiedEntry<'a,
     /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
-    /// map.insert("good", "job")?;
+    /// map.try_insert("good", "job")?;
     ///
     /// assert_eq!(map.contains_key("good"), true);
     ///
