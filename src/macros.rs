@@ -118,7 +118,7 @@ macro_rules! index_map {
 mod tests {
     use pretty_assertions::assert_eq;
 
-    use crate::array_map::DefaultHashBuilder;
+    use crate::array_map_facade::DefaultHashBuilder;
     use crate::ArrayMap;
 
     #[test]

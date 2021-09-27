@@ -17,7 +17,7 @@
     clippy::redundant_pub_crate
 )]
 
-mod array_map;
+mod array_map_facade;
 mod entry;
 mod errors;
 pub mod ext;
@@ -30,7 +30,7 @@ mod raw;
 mod utils;
 mod vacant;
 
-pub use crate::array_map::*;
+pub use crate::array_map_facade::*;
 pub use entry::*;
 pub use errors::*;
 pub use index_map::*;
