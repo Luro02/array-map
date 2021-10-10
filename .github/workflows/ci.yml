@@ -31,7 +31,8 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         with:
-          command: test --no-default-features
+          command: test
+          args: --no-default-features
 
   test-features:
     needs: test
@@ -49,7 +50,8 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         with:
-          command: test --no-default-features --features ${{ matrix.features }}
+          command: test
+          args: --no-default-features --features ${{ matrix.features }}
 
   fmt:
     name: rustfmt
