@@ -50,7 +50,7 @@ jobs:
           args: --no-default-features
 
   test-features:
-    needs: test
+    needs: test-default
     runs-on: ubuntu-latest
     strategy:
       matrix:
