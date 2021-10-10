@@ -1,9 +1,10 @@
 use core::{array, slice};
 
-pub trait ToIter<T> {
-    type Iter<'b>: Iterator<Item = &'b T>
+pub trait ToIter {
+    type Item: ?Sized;
+    type Iter<'b>: Iterator<Item = &'b Self::Item>
     where
-        T: 'b,
+        Self::Item: 'b,
         Self: 'b;
 
     /// Returns an immutable iterator over the remaining items in the mutable
@@ -11,23 +12,25 @@ pub trait ToIter<T> {
     fn iter(&self) -> Self::Iter<'_>;
 }
 
-impl<'a, T> ToIter<T> for slice::IterMut<'a, T> {
+impl<'a, T> ToIter for slice::IterMut<'a, T> {
+    type Item = T;
     type Iter<'b>
     where
-        T: 'b,
+        Self::Item: 'b,
         Self: 'b,
-    = slice::Iter<'b, T>;
+    = slice::Iter<'b, Self::Item>;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.as_slice().iter()
     }
 }
 
-impl<T, const N: usize> ToIter<T> for array::IntoIter<T, N> {
+impl<T, const N: usize> ToIter for array::IntoIter<T, N> {
+    type Item = T;
     type Iter<'b>
     where
-        T: 'b,
-    = slice::Iter<'b, T>;
+        Self::Item: 'b,
+    = slice::Iter<'b, Self::Item>;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.as_slice().iter()

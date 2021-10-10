@@ -109,7 +109,7 @@ impl<P, I> fmt::Debug for MapLeftIter<P, I>
 where
     P: PairLike,
     P::Left: fmt::Debug,
-    I: ToIter<P>,
+    I: ToIter<Item = P>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.iter()).finish()
@@ -127,14 +127,15 @@ where
     iter.map(PairLike::borrow)
 }
 
-impl<P, I> ToIter<P::Left> for MapLeftIter<P, I>
+impl<P, I> ToIter for MapLeftIter<P, I>
 where
     P: PairLike,
-    I: ToIter<P>,
+    I: ToIter<Item = P>,
 {
+    type Item = P::Left;
     type Iter<'b>
     where
-        P::Left: 'b,
+        Self::Item: 'b,
         Self: 'b,
     = MapLeftIter<(&'b P::Left, &'b P::Right), BorrowPairLikeIter<'b, P, I::Iter<'b>>>;
 

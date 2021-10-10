@@ -20,12 +20,13 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     }
 }
 
-impl<'a, T> ToIter<T> for IterMut<'a, T> {
+impl<'a, T> ToIter for IterMut<'a, T> {
+    type Item = T;
     type Iter<'b>
     where
-        T: 'b,
+        Self::Item: 'b,
         Self: 'b,
-    = iter::Flatten<<slice::IterMut<'b, Option<T>> as ToIter<Option<T>>>::Iter<'b>>;
+    = iter::Flatten<<slice::IterMut<'b, Option<T>> as ToIter>::Iter<'b>>;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.iter.iter().flatten()

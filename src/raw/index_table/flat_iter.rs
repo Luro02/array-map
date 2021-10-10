@@ -38,11 +38,12 @@ impl<T: fmt::Debug, const N: usize> fmt::Debug for FlatIter<T, N> {
 
 impl<T, const N: usize> FusedIterator for FlatIter<T, N> {}
 
-impl<T, const N: usize> ToIter<T> for FlatIter<T, N> {
+impl<T, const N: usize> ToIter for FlatIter<T, N> {
+    type Item = T;
     type Iter<'b>
     where
-        T: 'b,
-    = iter::Flatten<<array::IntoIter<Option<T>, N> as ToIter<Option<T>>>::Iter<'b>>;
+        Self::Item: 'b,
+    = iter::Flatten<<array::IntoIter<Option<T>, N> as ToIter>::Iter<'b>>;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.iter.iter().flatten()

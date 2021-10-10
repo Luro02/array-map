@@ -38,16 +38,16 @@ where
     }
 }
 
-impl<'a, K: 'a, V: 'a, R> ToIter<(K, V)> for IterMut<'a, K, V, R>
+impl<'a, K: 'a, V: 'a, R> ToIter for IterMut<'a, K, V, R>
 where
     R: RawTableIter<(K, V)>,
 {
+    type Item = (K, V);
     type Iter<'b>
     where
-        K: 'b,
-        V: 'b,
+        Self::Item: 'b,
         Self: 'b,
-    = <R::IterMut<'a> as ToIter<(K, V)>>::Iter<'b>;
+    = <R::IterMut<'a> as ToIter>::Iter<'b>;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.iter.iter()

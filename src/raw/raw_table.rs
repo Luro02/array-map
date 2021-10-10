@@ -135,7 +135,7 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
 }
 
 pub trait RawTableIter<T>: RawTable<T> {
-    type IterMut<'a>: ToIter<T> + Iterator<Item = &'a mut T>
+    type IterMut<'a>: ToIter<Item = T> + Iterator<Item = &'a mut T>
     where
         T: 'a;
     type Iter<'a>: Iterator<Item = &'a T>

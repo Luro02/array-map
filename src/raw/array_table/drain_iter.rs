@@ -22,10 +22,11 @@ impl<T, const N: usize> Iterator for DrainIter<T, N> {
 
 impl<T, const N: usize> FusedIterator for DrainIter<T, N> {}
 
-impl<T, const N: usize> ToIter<T> for DrainIter<T, N> {
+impl<T, const N: usize> ToIter for DrainIter<T, N> {
+    type Item = T;
     type Iter<'a>
     where
-        T: 'a,
+        Self::Item: 'a,
     = iter::Flatten<slice::Iter<'a, Option<T>>>;
 
     fn iter(&self) -> Self::Iter<'_> {
