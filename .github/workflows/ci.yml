@@ -18,7 +18,7 @@ jobs:
         with:
           command: check
 
-  test:
+  test-default:
     name: test
     runs-on: ubuntu-latest
     steps:
@@ -32,6 +32,22 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+
+  test-no-default:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --no-default-features
 
   test-features:
     needs: test
