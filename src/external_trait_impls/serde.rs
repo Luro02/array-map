@@ -54,7 +54,7 @@ mod map {
                     let mut result = ArrayMap::with_hasher(B::default());
 
                     while let Some((key, value)) = map.next_entry()? {
-                        result.insert(key, value).map_err(A::Error::custom)?;
+                        result.try_insert(key, value).map_err(A::Error::custom)?;
                     }
 
                     Ok(result)
