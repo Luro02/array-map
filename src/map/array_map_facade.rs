@@ -4,13 +4,13 @@ use core::marker::PhantomData;
 use core::ops::Index;
 use core::{fmt, mem};
 
-use crate::entry::Entry;
 use crate::errors::{CapacityError, RescaleError, UnavailableMutError};
 use crate::ext::{TryExtend, TryFromIterator};
-use crate::iter::{Drain, DrainFilter, Iter, IterMut, Keys, Values, ValuesMut};
-use crate::occupied::OccupiedEntry;
+use crate::map::entry::Entry;
+use crate::map::iter::{Drain, DrainFilter, Iter, IterMut, Keys, Values, ValuesMut};
+use crate::map::occupied::OccupiedEntry;
+use crate::map::vacant::VacantEntry;
 use crate::raw::{ArrayTable, FixedSizeTable, RawEntryBuilder, RawTable, RawTableIter};
-use crate::vacant::VacantEntry;
 use crate::{unreachable_unchecked, utils};
 
 /// Default hasher for [`ArrayMapFacade`].

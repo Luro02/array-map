@@ -1,7 +1,7 @@
 use core::borrow::Borrow;
 use core::hash::{BuildHasher, Hash};
 
-use crate::iter::MapLeftIter;
+use crate::map::iter::MapLeftIter;
 use crate::raw::{ArrayTable, RawTable, RawTableIter};
 use crate::set::{Set, SetIter};
 use crate::{ArrayMapFacade, CapacityError, DefaultHashBuilder};
@@ -103,7 +103,7 @@ where
     type Iter<'a>
     where
         T: 'a,
-    = crate::iter::Keys<'a, T, (), R>;
+    = crate::map::iter::Keys<'a, T, (), R>;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.map.keys()

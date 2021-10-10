@@ -14,13 +14,13 @@ macro_rules! array_map {
         $crate::array_map!( $( @build_hasher => $bh, )? $( $key => $value ),+)
     };
     ( @helper_construct $bh:expr ) => {
-        $crate::ArrayMap::with_build_hasher($bh)
+        $crate::map::ArrayMap::with_build_hasher($bh)
     };
     ( @helper_construct ) => {
         {
             #[cfg(feature = "ahash")]
             {
-                $crate::ArrayMap::new()
+                $crate::map::ArrayMap::new()
             }
             #[cfg(not(feature = "ahash"))]
             {
@@ -45,7 +45,7 @@ macro_rules! array_map {
     };
     ( $( @build_hasher => $bh:expr, )? $( $key:expr => $value:expr ),* ) => {
         {
-            let _map: $crate::ArrayMap<_, _, { $crate::array_map!(@count $($key),*) }, _> = $crate::array_map!(
+            let _map: $crate::map::ArrayMap<_, _, { $crate::array_map!(@count $($key),*) }, _> = $crate::array_map!(
                 @infer,
                 $( @build_hasher => $bh, )?
                 $( $key => $value ),*
@@ -72,13 +72,13 @@ macro_rules! index_map {
         $crate::index_map!( $( @build_hasher => $bh, )? $( $key => $value ),+)
     };
     ( @helper_construct $bh:expr ) => {
-        $crate::IndexMap::with_build_hasher($bh)
+        $crate::map::IndexMap::with_build_hasher($bh)
     };
     ( @helper_construct ) => {
         {
             #[cfg(feature = "ahash")]
             {
-                $crate::IndexMap::new()
+                $crate::map::IndexMap::new()
             }
             #[cfg(not(feature = "ahash"))]
             {
@@ -118,13 +118,13 @@ macro_rules! index_map {
 mod tests {
     use pretty_assertions::assert_eq;
 
-    use crate::array_map_facade::DefaultHashBuilder;
-    use crate::ArrayMap;
+    use crate::map::array_map_facade::DefaultHashBuilder;
+    use crate::map::ArrayMap;
 
     #[test]
     fn test_arraymap_macro_empty() {
-        let map: crate::ArrayMap<(), (), 0> = array_map!();
-        assert_eq!(map, crate::ArrayMap::new());
+        let map: crate::map::ArrayMap<(), (), 0> = array_map!();
+        assert_eq!(map, crate::map::ArrayMap::new());
     }
 
     #[test]
@@ -137,7 +137,7 @@ mod tests {
         };
 
         assert_eq!(map, {
-            let mut map = crate::ArrayMap::new();
+            let mut map = crate::map::ArrayMap::new();
 
             map.try_insert("key_00", "value_00").unwrap();
             map.try_insert("key_01", "value_00").unwrap();

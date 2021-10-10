@@ -1,9 +1,9 @@
 use core::fmt;
 use core::hash::{BuildHasher, Hash};
 
-use crate::occupied::OccupiedEntry;
+use crate::map::occupied::OccupiedEntry;
+use crate::map::vacant::VacantEntry;
 use crate::raw::RawTable;
-use crate::vacant::VacantEntry;
 
 /// A view into a single entry in a map, which may either be vacant or occupied.
 ///

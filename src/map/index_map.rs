@@ -3,10 +3,10 @@ use core::fmt;
 use core::hash::{BuildHasher, Hash};
 use core::ops::{Bound, Index, RangeBounds};
 
-use crate::iter::DrainRange;
+use crate::map::iter::DrainRange;
+use crate::map::{ArrayMapFacade, DefaultHashBuilder};
 use crate::raw::{ArrayIndexTable, RawTable, TableIndex};
 use crate::utils::{self, UnwrapExpectExt};
-use crate::{ArrayMapFacade, DefaultHashBuilder};
 
 pub type IndexMap<K, V, const N: usize, B = DefaultHashBuilder> =
     ArrayMapFacade<K, V, ArrayIndexTable<(K, V), N>, B>;

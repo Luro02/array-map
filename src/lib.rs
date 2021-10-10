@@ -17,26 +17,16 @@
     clippy::redundant_pub_crate
 )]
 
-mod array_map_facade;
-mod entry;
 mod errors;
 pub mod ext;
 mod external_trait_impls;
-mod index_map;
-pub mod iter;
-mod macros;
-mod occupied;
+pub mod map;
 mod raw;
 pub mod set;
 mod utils;
-mod vacant;
 
-pub use crate::array_map_facade::*;
-pub use entry::*;
+pub use crate::map::{ArrayMap, ArrayMapFacade, DefaultHashBuilder, IndexMap};
 pub use errors::*;
-pub use index_map::*;
-pub use occupied::*;
-pub use vacant::*;
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

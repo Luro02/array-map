@@ -1,8 +1,9 @@
 use core::hash::{BuildHasher, Hash};
 use core::{fmt, mem};
 
+use crate::map::VacantEntry;
 use crate::raw::RawTable;
-use crate::{utils, VacantEntry};
+use crate::utils;
 
 /// A view into an occupied entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.

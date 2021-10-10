@@ -2,13 +2,14 @@ use core::fmt;
 use core::hash::{BuildHasher, Hash};
 use core::marker::PhantomData;
 
+use crate::map::OccupiedEntry;
 use crate::raw::RawTable;
-use crate::{invariant, unreachable_unchecked, utils, OccupiedEntry};
+use crate::{invariant, unreachable_unchecked, utils};
 
 /// A view into a vacant entry in an `ArrayMap`. It is part of the [`Entry`]
 /// enum.
 ///
-/// [`Entry`]: crate::Entry
+/// [`Entry`]: crate::map::Entry
 pub struct VacantEntry<'a, K, V, R: RawTable<(K, V)>, B: BuildHasher> {
     key: K,
     table: &'a mut R,
@@ -38,7 +39,8 @@ impl<'a, K, V, R: RawTable<(K, V)>, B: BuildHasher> VacantEntry<'a, K, V, R, B> 
     /// # Example
     ///
     /// ```
-    /// use array_map::{ArrayMap, Entry};
+    /// use array_map::map::Entry;
+    /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
     ///
@@ -57,7 +59,8 @@ impl<'a, K, V, R: RawTable<(K, V)>, B: BuildHasher> VacantEntry<'a, K, V, R, B> 
     /// # Example
     ///
     /// ```
-    /// use array_map::{ArrayMap, Entry};
+    /// use array_map::map::Entry;
+    /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
     ///
@@ -81,7 +84,8 @@ impl<'a, K: Hash, V, R: RawTable<(K, V)>, B: BuildHasher> VacantEntry<'a, K, V, 
     /// # Example
     ///
     /// ```
-    /// use array_map::{ArrayMap, Entry};
+    /// use array_map::map::Entry;
+    /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
     ///
@@ -100,7 +104,8 @@ impl<'a, K: Hash, V, R: RawTable<(K, V)>, B: BuildHasher> VacantEntry<'a, K, V, 
     /// # Example
     ///
     /// ```
-    /// use array_map::{ArrayMap, Entry};
+    /// use array_map::map::Entry;
+    /// use array_map::ArrayMap;
     ///
     /// let mut map: ArrayMap<&str, &str, 11> = ArrayMap::new();
     ///
