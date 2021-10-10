@@ -100,7 +100,7 @@
     <span class="ident">B</span>: <span class="ident">BuildHasher</span>,
 {
     <span class="attribute">#[<span class="ident">must_use</span>]</span>
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">table</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">R</span>, <span class="ident">build_hasher</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">B</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="self">Self</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">table</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">R</span>, <span class="ident">build_hasher</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">B</span>) -&gt; <span class="self">Self</span> {
         <span class="self">Self</span> {
             <span class="ident">table</span>,
             <span class="ident">build_hasher</span>,
@@ -115,7 +115,7 @@
     <span class="ident">R</span>: <span class="ident">RawTable</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">V</span>)<span class="op">&gt;</span>,
 {
     <span class="doccomment">/// Access an entry by key.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_key</span><span class="op">&lt;</span><span class="ident">Q</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">qkey</span>: <span class="kw-2">&amp;</span><span class="ident">Q</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">V</span>)<span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_key</span><span class="op">&lt;</span><span class="ident">Q</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">qkey</span>: <span class="kw-2">&amp;</span><span class="ident">Q</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">V</span>)<span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">K</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Q</span><span class="op">&gt;</span>,
         <span class="ident">Q</span>: <span class="ident">Hash</span> <span class="op">+</span> <span class="ident">Eq</span>,
@@ -126,29 +126,29 @@
     }
 
     <span class="doccomment">/// Access an entry by a key and its hash.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_key_hashed_nocheck</span><span class="op">&lt;</span><span class="ident">Q</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">hash</span>: <span class="ident">u64</span>, <span class="ident">qkey</span>: <span class="kw-2">&amp;</span><span class="ident">Q</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">V</span>)<span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_key_hashed_nocheck</span><span class="op">&lt;</span><span class="ident">Q</span>: <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">hash</span>: <span class="ident">u64</span>, <span class="ident">qkey</span>: <span class="kw-2">&amp;</span><span class="ident">Q</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">V</span>)<span class="op">&gt;</span>
     <span class="kw">where</span>
         <span class="ident">K</span>: <span class="ident">Borrow</span><span class="op">&lt;</span><span class="ident">Q</span><span class="op">&gt;</span>,
         <span class="ident">Q</span>: <span class="ident">Eq</span>,
     {
-        <span class="self">self</span>.<span class="ident">from_hash</span>(<span class="ident">hash</span>, <span class="op">|</span><span class="ident">key</span><span class="op">|</span> <span class="ident">key</span>.<span class="ident">borrow</span>() <span class="op">=</span><span class="op">=</span> <span class="ident">qkey</span>)
+        <span class="self">self</span>.<span class="ident">from_hash</span>(<span class="ident">hash</span>, <span class="op">|</span><span class="ident">key</span><span class="op">|</span> <span class="ident">key</span>.<span class="ident">borrow</span>() <span class="op">==</span> <span class="ident">qkey</span>)
     }
 
     <span class="doccomment">/// Access an entry by hash.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_hash</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">hash</span>: <span class="ident">u64</span>, <span class="ident">is_match</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">V</span>)<span class="op">&gt;</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_hash</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">hash</span>: <span class="ident">u64</span>, <span class="ident">is_match</span>: <span class="ident">F</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">V</span>)<span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">K</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="ident">bool</span>,
     {
         <span class="self">self</span>.<span class="ident">search</span>(<span class="ident">hash</span>, <span class="ident">is_match</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">search</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">hash</span>: <span class="ident">u64</span>, <span class="kw-2">mut</span> <span class="ident">is_match</span>: <span class="ident">F</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">V</span>)<span class="op">&gt;</span>
+    <span class="kw">fn</span> <span class="ident">search</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="self">self</span>, <span class="ident">hash</span>: <span class="ident">u64</span>, <span class="kw-2">mut</span> <span class="ident">is_match</span>: <span class="ident">F</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">K</span>, <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">V</span>)<span class="op">&gt;</span>
     <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">K</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">bool</span>,
+        <span class="ident">F</span>: <span class="ident">FnMut</span>(<span class="kw-2">&amp;</span><span class="ident">K</span>) -&gt; <span class="ident">bool</span>,
     {
         <span class="kw">match</span> <span class="self">self</span>.<span class="ident">table</span>.<span class="ident">get</span>(<span class="ident">hash</span>, <span class="op">|</span>(<span class="ident">key</span>, <span class="kw">_</span>)<span class="op">|</span> <span class="ident">is_match</span>(<span class="ident">key</span>)) {
-            <span class="prelude-val">Some</span>((<span class="ident">key</span>, <span class="ident">value</span>)) <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">Some</span>((<span class="ident">key</span>, <span class="ident">value</span>)),
-            <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">None</span>,
+            <span class="prelude-val">Some</span>((<span class="ident">key</span>, <span class="ident">value</span>)) =&gt; <span class="prelude-val">Some</span>((<span class="ident">key</span>, <span class="ident">value</span>)),
+            <span class="prelude-val">None</span> =&gt; <span class="prelude-val">None</span>,
         }
     }
 }
@@ -158,7 +158,7 @@
     <span class="ident">R</span>: <span class="ident">RawTable</span><span class="op">&lt;</span>(<span class="ident">K</span>, <span class="ident">V</span>)<span class="op">&gt;</span>,
     <span class="ident">B</span>: <span class="ident">BuildHasher</span>,
 {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">fmt::Result</span> {
+    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
         <span class="ident">f</span>.<span class="ident">debug_struct</span>(<span class="macro">stringify!</span>(<span class="ident">RawEntryBuilder</span>)).<span class="ident">finish</span>()
     }
 }
