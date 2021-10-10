@@ -46,6 +46,7 @@ where
     where
         K: 'b,
         V: 'b,
+        Self: 'b,
     = <R::IterMut<'a> as ToIter<(K, V)>>::Iter<'b>;
 
     fn iter(&self) -> Self::Iter<'_> {

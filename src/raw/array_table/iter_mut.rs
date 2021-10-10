@@ -24,6 +24,7 @@ impl<'a, T> ToIter<T> for IterMut<'a, T> {
     type Iter<'b>
     where
         T: 'b,
+        Self: 'b,
     = iter::Flatten<<slice::IterMut<'b, Option<T>> as ToIter<Option<T>>>::Iter<'b>>;
 
     fn iter(&self) -> Self::Iter<'_> {

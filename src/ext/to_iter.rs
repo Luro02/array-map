@@ -3,7 +3,8 @@ use core::{array, slice};
 pub trait ToIter<T> {
     type Iter<'b>: Iterator<Item = &'b T>
     where
-        T: 'b;
+        T: 'b,
+        Self: 'b;
 
     /// Returns an immutable iterator over the remaining items in the mutable
     /// iterator.
@@ -14,6 +15,7 @@ impl<'a, T> ToIter<T> for slice::IterMut<'a, T> {
     type Iter<'b>
     where
         T: 'b,
+        Self: 'b,
     = slice::Iter<'b, T>;
 
     fn iter(&self) -> Self::Iter<'_> {
