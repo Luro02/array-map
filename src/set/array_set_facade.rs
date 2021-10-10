@@ -16,6 +16,7 @@ pub struct ArraySetFacade<T, R: RawTable<(T, ())>, B = DefaultHashBuilder> {
 
 pub type IntoIter<T, R> = MapLeftIter<(T, ()), <R as IntoIterator>::IntoIter>;
 
+#[cfg(feature = "ahash")]
 impl<T, R: RawTable<(T, ())> + Default> ArraySetFacade<T, R, DefaultHashBuilder> {
     /// Creates an empty `ArraySetFacade` with the [`DefaultHashBuilder`].
     ///
@@ -124,7 +125,7 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ahash"))]
 mod tests {
     use super::*;
 

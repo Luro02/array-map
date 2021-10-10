@@ -32,14 +32,13 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --no-default-features
 
   test-features:
     needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        features: ["alloc", "nightly", "std", "serde", "ahash"]
+        features: ["alloc ahash", "nightly ahash", "std ahash", "serde ahash", "ahash"]
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1

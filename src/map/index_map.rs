@@ -475,7 +475,7 @@ impl fmt::Display for IndexOutOfBoundsError {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "ahash"))]
 mod tests {
     use super::*;
 
