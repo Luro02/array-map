@@ -265,11 +265,11 @@ where
     /// assert_eq!(castles["Anvil Castle"], Status::Empty);
     /// # Ok::<_, array_map::CapacityError>(())
     /// ```
-    /// 
+    ///
     /// # Note
-    /// 
-    /// This is not the same as `HashMap::try_insert`, which errors if the value is already
-    /// present in the map.
+    ///
+    /// This is not the same as `HashMap::try_insert`, which errors if the value
+    /// is already present in the map.
     pub fn try_insert(&mut self, key: K, value: V) -> Result<Option<V>, CapacityError> {
         Ok(self.entry(key)?.insert(value))
     }

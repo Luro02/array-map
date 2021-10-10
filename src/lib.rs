@@ -27,6 +27,7 @@ pub mod iter;
 mod macros;
 mod occupied;
 mod raw;
+pub mod set;
 mod utils;
 mod vacant;
 
