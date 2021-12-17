@@ -5,7 +5,7 @@ use crate::ext::ToIter;
 use crate::raw::RawTableIter;
 
 #[must_use]
-pub struct IterMut<'a, K: 'a, V: 'a, R: RawTableIter<(K, V)>> {
+pub struct IterMut<'a, K: 'a, V: 'a, R: 'a + RawTableIter<(K, V)>> {
     iter: <R as RawTableIter<(K, V)>>::IterMut<'a>,
 }
 
@@ -38,7 +38,7 @@ where
     }
 }
 
-impl<'a, K: 'a, V: 'a, R> ToIter for IterMut<'a, K, V, R>
+impl<'a, K: 'a, V: 'a, R: 'a> ToIter for IterMut<'a, K, V, R>
 where
     R: RawTableIter<(K, V)>,
 {

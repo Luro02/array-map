@@ -185,7 +185,7 @@ impl<T, const N: usize> ArrayExt<T, N> for [T; N] {
         F: FnMut(T) -> X,
     {
         let mut array: [MaybeUninit<U>; N] = MaybeUninit::uninit_array();
-        let mut iterator = core::array::IntoIter::new(self);
+        let mut iterator = self.into_iter();
 
         for item in array.iter_mut() {
             // NOTE: it is guranteed that this will not panic

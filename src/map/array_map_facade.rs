@@ -159,11 +159,12 @@ impl<K, V, R: RawTable<(K, V)>, B: BuildHasher> ArrayMapFacade<K, V, R, B> {
     /// # Examples
     ///
     /// ```
-    /// use array_map::{ArrayMap, DefaultHashBuilder};
+    /// use array_map::ArrayMap;
+    /// use std::collections::hash_map::RandomState;
     ///
-    /// let hasher = DefaultHashBuilder::default();
-    /// let map: ArrayMap<i32, i32, 12> = ArrayMap::with_hasher(hasher);
-    /// let hasher: &DefaultHashBuilder = map.build_hasher();
+    /// let hasher = RandomState::default();
+    /// let map: ArrayMap<i32, i32, 12, _> = ArrayMap::with_hasher(hasher);
+    /// let hasher: &RandomState = map.build_hasher();
     /// ```
     #[must_use]
     #[doc(alias("hasher"))]

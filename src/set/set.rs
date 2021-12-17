@@ -97,7 +97,8 @@ pub trait SetIter<T>: Set<T> + IntoIterator<Item = T> {
     /// An immutable iterator over the elements of the set.
     type Iter<'a>: Iterator<Item = &'a T>
     where
-        T: 'a;
+        T: 'a,
+        Self: 'a;
 
     /// An iterator visiting all elements in arbitrary order. The iterator
     /// element type is `&'a T`.
@@ -239,6 +240,7 @@ where
     type Iter<'a>
     where
         T: 'a,
+        Self: 'a,
     = ::std::collections::hash_set::Iter<'a, T>;
 
     fn iter(&self) -> Self::Iter<'_> {

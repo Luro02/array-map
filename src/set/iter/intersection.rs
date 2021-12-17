@@ -6,7 +6,7 @@ use crate::set::{Set, SetIter};
 /// A lazy iterator producing elements in the intersection of [`Set`]s.
 ///
 /// This `struct` is created by [`Set::intersection`].
-pub struct Intersection<'a, T: 'a, A: SetIter<T>, B: Set<T>> {
+pub struct Intersection<'a, T: 'a, A: 'a + SetIter<T>, B: Set<T>> {
     a: A::Iter<'a>,
     b: &'a B,
 }
@@ -31,8 +31,9 @@ impl<'a, T: Hash + Eq, A: SetIter<T>, B: Set<T>> Iterator for Intersection<'a, T
     }
 }
 
-impl<'a, T: Hash + Eq, A: SetIter<T>, B: Set<T>> DoubleEndedIterator for Intersection<'a, T, A, B>
+impl<'a, T: Hash + Eq, A, B: Set<T>> DoubleEndedIterator for Intersection<'a, T, A, B>
 where
+    A: 'a + SetIter<T>,
     A::Iter<'a>: DoubleEndedIterator,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -46,13 +47,17 @@ where
     }
 }
 
-impl<'a, T: Hash + Eq, A: SetIter<T>, B: Set<T>> FusedIterator for Intersection<'a, T, A, B> where
-    A::Iter<'a>: FusedIterator
+impl<'a, T: Hash + Eq, A, B: Set<T>> FusedIterator for Intersection<'a, T, A, B>
+//
+where
+    A: 'a + SetIter<T>,
+    A::Iter<'a>: FusedIterator,
 {
 }
 
-impl<'a, T, A: SetIter<T>, B: Set<T>> Clone for Intersection<'a, T, A, B>
+impl<'a, T, A, B: Set<T>> Clone for Intersection<'a, T, A, B>
 where
+    A: 'a + SetIter<T>,
     A::Iter<'a>: Clone,
 {
     fn clone(&self) -> Self {

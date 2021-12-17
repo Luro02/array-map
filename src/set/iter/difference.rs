@@ -6,7 +6,7 @@ use crate::set::{Set, SetIter};
 /// A lazy iterator producing elements in the difference of [`Set`]s.
 ///
 /// This `struct` is created by [`Set::difference`].
-pub struct Difference<'a, T: 'a, A: SetIter<T>, B: Set<T>> {
+pub struct Difference<'a, T: 'a, A: 'a + SetIter<T>, B: Set<T>> {
     a: A::Iter<'a>,
     b: &'a B,
 }

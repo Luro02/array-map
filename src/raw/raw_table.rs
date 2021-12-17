@@ -137,10 +137,12 @@ pub trait RawTable<T>: IntoIterator<Item = T> {
 pub trait RawTableIter<T>: RawTable<T> {
     type IterMut<'a>: ToIter<Item = T> + Iterator<Item = &'a mut T>
     where
-        T: 'a;
+        T: 'a,
+        Self: 'a;
     type Iter<'a>: Iterator<Item = &'a T>
     where
-        T: 'a;
+        T: 'a,
+        Self: 'a;
 
     /// Returns a mutable iterator over the table.
     fn iter_mut(&mut self) -> Self::IterMut<'_>;

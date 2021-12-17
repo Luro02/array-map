@@ -5,7 +5,7 @@ use core::marker::PhantomData;
 use crate::raw::RawTableIter;
 
 #[must_use]
-pub struct Iter<'a, K, V, R: RawTableIter<(K, V)>>(R::Iter<'a>, PhantomData<&'a (K, V)>);
+pub struct Iter<'a, K, V, R: 'a + RawTableIter<(K, V)>>(R::Iter<'a>, PhantomData<&'a (K, V)>);
 
 impl<'a, K, V, R: RawTableIter<(K, V)>> Iter<'a, K, V, R> {
     pub(crate) fn new(table: &'a R) -> Self {

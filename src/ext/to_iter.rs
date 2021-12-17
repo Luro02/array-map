@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn test_array() {
-        let mut iter = array::IntoIter::new([1, 2, 3]);
+        let mut iter = [1, 2, 3].into_iter();
 
         assert_eq!(
             iter.iter().try_collect::<[Option<_>; 4]>().unwrap(),

@@ -299,10 +299,12 @@ impl<T, R: FixedSizeTable<TableIndex<N>, N>, const N: usize> RawTableIter<T>
     type Iter<'a>
     where
         T: 'a,
+        R: 'a,
     = FlatIter<&'a T, N>;
     type IterMut<'a>
     where
         T: 'a,
+        R: 'a,
     = IterMut<'a, T>;
 
     /// Returns a mutable iterator over the table.

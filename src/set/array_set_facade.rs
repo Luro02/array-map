@@ -104,6 +104,8 @@ where
     type Iter<'a>
     where
         T: 'a,
+        R: 'a,
+        B: 'a,
     = crate::map::iter::Keys<'a, T, (), R>;
 
     fn iter(&self) -> Self::Iter<'_> {
