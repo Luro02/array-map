@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(
-    const_generics_defaults,
     array_methods,
     never_type,
     maybe_uninit_uninit_array,
