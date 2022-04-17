@@ -296,16 +296,14 @@ impl<T, R: FixedSizeTable<TableIndex<N>, N>, const N: usize> FixedSizeTable<T, N
 impl<T, R: FixedSizeTable<TableIndex<N>, N>, const N: usize> RawTableIter<T>
     for IndexTable<T, R, N>
 {
-    type Iter<'a>
+    type Iter<'a> = FlatIter<&'a T, N>
     where
         T: 'a,
-        R: 'a,
-    = FlatIter<&'a T, N>;
-    type IterMut<'a>
+        R: 'a;
+    type IterMut<'a> = IterMut<'a, T>
     where
         T: 'a,
-        R: 'a,
-    = IterMut<'a, T>;
+        R: 'a;
 
     /// Returns a mutable iterator over the table.
     fn iter_mut(&mut self) -> Self::IterMut<'_> {

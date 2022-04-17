@@ -1072,7 +1072,7 @@ where
 
         for (key, value) in value {
             if let Err(error) = result.try_insert(key, value) {
-                unreachable_unchecked!(error);
+                unreachable_unchecked!("{}", error);
             }
         }
 
@@ -1129,7 +1129,7 @@ where
         &mut self,
         iter: T,
     ) -> Result<(), Self::Error> {
-        self.try_extend(iter.into_iter().map(|(k, v)| (k, v)))
+        self.try_extend(iter.into_iter().map::<(K, V), _>(|(k, v)| (*k, *v)))
     }
 }
 
@@ -1171,7 +1171,7 @@ mod tests {
         );
     }
 
-    #[derive(PartialEq, Eq)]
+    #[derive(Copy, Clone, PartialEq, Eq)]
     struct HasHash(u64, u64);
 
     impl core::hash::Hash for HasHash {
@@ -1561,6 +1561,46 @@ mod tests {
                 None,                     // 2
                 Some((HasHash(3, 1), 1)), // 3
             ])
+        );
+    }
+
+    #[test]
+    fn test_try_extend() {
+        //
+        let mut map: ArrayMap<HasHash, usize, 4, _> = array_map! {
+            @infer,
+            @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+            HasHash(1, 1) => 0,
+            HasHash(2, 2) => 1,
+        }
+        .unwrap();
+
+        assert_eq!(
+            map.try_extend(::core::iter::once((&HasHash(3, 3), &2))),
+            Ok(())
+        );
+        assert_eq!(
+            map,
+            array_map! {
+                @infer,
+                @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+                HasHash(1, 1) => 0,
+                HasHash(2, 2) => 1,
+                HasHash(3, 3) => 2,
+            }
+            .unwrap()
+        );
+
+        assert_eq!(map.try_extend([(HasHash(4, 4), 3)]), Ok(()));
+        assert_eq!(
+            map,
+            array_map! {
+                @build_hasher => ::core::hash::BuildHasherDefault::<Hasher>::default(),
+                HasHash(1, 1) => 0,
+                HasHash(2, 2) => 1,
+                HasHash(3, 3) => 2,
+                HasHash(4, 4) => 3,
+            }
         );
     }
 }

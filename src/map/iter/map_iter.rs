@@ -133,11 +133,10 @@ where
     I: ToIter<Item = P>,
 {
     type Item = P::Left;
-    type Iter<'b>
+    type Iter<'b> = MapLeftIter<(&'b P::Left, &'b P::Right), BorrowPairLikeIter<'b, P, I::Iter<'b>>>
     where
         Self::Item: 'b,
-        Self: 'b,
-    = MapLeftIter<(&'b P::Left, &'b P::Right), BorrowPairLikeIter<'b, P, I::Iter<'b>>>;
+        Self: 'b;
 
     fn iter(&self) -> Self::Iter<'_> {
         MapLeftIter::new(borrow_pair_like_iter(self.iter.iter()))

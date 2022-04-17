@@ -40,10 +40,9 @@ impl<T, const N: usize> FusedIterator for FlatIter<T, N> {}
 
 impl<T, const N: usize> ToIter for FlatIter<T, N> {
     type Item = T;
-    type Iter<'b>
+    type Iter<'b> = iter::Flatten<<array::IntoIter<Option<T>, N> as ToIter>::Iter<'b>>
     where
-        Self::Item: 'b,
-    = iter::Flatten<<array::IntoIter<Option<T>, N> as ToIter>::Iter<'b>>;
+        Self::Item: 'b;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.iter.iter().flatten()

@@ -14,11 +14,10 @@ pub trait ToIter {
 
 impl<'a, T> ToIter for slice::IterMut<'a, T> {
     type Item = T;
-    type Iter<'b>
+    type Iter<'b> = slice::Iter<'b, Self::Item>
     where
         Self::Item: 'b,
-        Self: 'b,
-    = slice::Iter<'b, Self::Item>;
+        Self: 'b;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.as_slice().iter()
@@ -27,10 +26,9 @@ impl<'a, T> ToIter for slice::IterMut<'a, T> {
 
 impl<T, const N: usize> ToIter for array::IntoIter<T, N> {
     type Item = T;
-    type Iter<'b>
+    type Iter<'b> = slice::Iter<'b, Self::Item>
     where
-        Self::Item: 'b,
-    = slice::Iter<'b, Self::Item>;
+        Self::Item: 'b;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.as_slice().iter()

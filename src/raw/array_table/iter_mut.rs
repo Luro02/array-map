@@ -22,11 +22,10 @@ impl<'a, T> Iterator for IterMut<'a, T> {
 
 impl<'a, T> ToIter for IterMut<'a, T> {
     type Item = T;
-    type Iter<'b>
+    type Iter<'b> = iter::Flatten<<slice::IterMut<'b, Option<T>> as ToIter>::Iter<'b>>
     where
         Self::Item: 'b,
-        Self: 'b,
-    = iter::Flatten<<slice::IterMut<'b, Option<T>> as ToIter>::Iter<'b>>;
+        Self: 'b;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.iter.iter().flatten()

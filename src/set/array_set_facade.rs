@@ -101,12 +101,11 @@ where
     R: RawTableIter<(T, ())>,
     B: BuildHasher,
 {
-    type Iter<'a>
+    type Iter<'a> = crate::map::iter::Keys<'a, T, (), R>
     where
         T: 'a,
         R: 'a,
-        B: 'a,
-    = crate::map::iter::Keys<'a, T, (), R>;
+        B: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.map.keys()

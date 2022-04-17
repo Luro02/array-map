@@ -24,10 +24,9 @@ impl<T, const N: usize> FusedIterator for DrainIter<T, N> {}
 
 impl<T, const N: usize> ToIter for DrainIter<T, N> {
     type Item = T;
-    type Iter<'a>
+    type Iter<'a> = iter::Flatten<slice::Iter<'a, Option<T>>>
     where
-        Self::Item: 'a,
-    = iter::Flatten<slice::Iter<'a, Option<T>>>;
+        Self::Item: 'a;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.0.iter().flatten()

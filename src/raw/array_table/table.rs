@@ -275,14 +275,12 @@ impl<'a, T, const N: usize> IntoIterator for &'a mut ArrayTable<T, N> {
 }
 
 impl<T, const N: usize> RawTableIter<T> for ArrayTable<T, N> {
-    type Iter<'a>
+    type Iter<'a> = <&'a Self as IntoIterator>::IntoIter
     where
-        T: 'a,
-    = <&'a Self as IntoIterator>::IntoIter;
-    type IterMut<'a>
+        T: 'a;
+    type IterMut<'a> = IterMut<'a, T>
     where
-        T: 'a,
-    = IterMut<'a, T>;
+        T: 'a;
 
     fn iter_mut(&mut self) -> Self::IterMut<'_> {
         IterMut::new(self.data.iter_mut())

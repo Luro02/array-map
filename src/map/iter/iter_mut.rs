@@ -43,11 +43,10 @@ where
     R: RawTableIter<(K, V)>,
 {
     type Item = (K, V);
-    type Iter<'b>
+    type Iter<'b> = <R::IterMut<'a> as ToIter>::Iter<'b>
     where
         Self::Item: 'b,
-        Self: 'b,
-    = <R::IterMut<'a> as ToIter>::Iter<'b>;
+        Self: 'b;
 
     fn iter(&self) -> Self::Iter<'_> {
         self.iter.iter()
