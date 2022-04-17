@@ -33,8 +33,8 @@ jobs:
         with:
           command: test
 
-  test-no-default:
-    name: test
+  check-no-default:
+    name: check-no-default
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -46,7 +46,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: check
           args: --no-default-features
 
   test-features:
